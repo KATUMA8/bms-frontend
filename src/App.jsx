@@ -1,8 +1,12 @@
+import Home from "./pages/Home"
+
 function App() {
 
   return (
    <div>
- <h1>Reactベース</h1>
+ {/* 共通のサイドバー（一旦管理者固定、またはroleFlagを渡す） */}
+      <Sidebar roleFlag={1} />
+ <Home/>
  </div>
   )
 }

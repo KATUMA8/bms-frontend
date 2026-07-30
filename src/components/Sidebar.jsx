@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { NavLink } from "react-router";
 
 // roleFlag を外から受け取るようにします（例: 1 = 管理者, 2 = 発注業者）
 export default function Sidebar({ roleFlag }) {
@@ -10,26 +10,26 @@ export default function Sidebar({ roleFlag }) {
       <ul>
         {/* ホームへのリンク */}
         <li>
-          <Link to={isAdmin ? "/" : "/contractee/home"}>
+          <NavLink to={isAdmin ? "/" : "/contractee/home"}>
             ホーム
-          </Link>
+          </NavLink>
         </li>
         {/* 顧客管理へのリンク */}
         <li>
-          <Link to={isAdmin ? "/clients" : "/contractee/clients"}>
+          <NavLink to={isAdmin ? "/clients" : "/contractee/clients"}>
             顧客管理
-          </Link>
+          </NavLink>
         </li>
         {/* 案件管理へのリンク */}
         <li>
-          <Link to={isAdmin ? "/projects" : "/contractee/projects"}>
+          <NavLink to={isAdmin ? "/projects" : "/contractee/projects"}>
             案件管理
-          </Link>
+          </NavLink>
         </li>
         {/* role_flagが 1（管理者）のときだけ「業者管理」を表示する */}
         {isAdmin && (
           <li>
-            <Link to="/companys">業者管理</Link>
+            <NavLink to="/companys">業者管理</NavLink>
           </li>
         )}
       </ul>

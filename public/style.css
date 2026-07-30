@@ -71,7 +71,7 @@ body {
 	margin-left: 250px;
 	flex: 1;
 	padding: 40px;
-	max-width: calc(100% - 250px);
+	/* max-width: calc(100% - 250px); */
 }
 
 header {
@@ -824,7 +824,7 @@ details[open] summary::before {
 /*ページ遷移リンク*/
 .kana-filter {
     /* 上10px 左右0px 下10px */
-    margin: 10px 0; 
+    margin: 10px 0;
 }
 
 .pagination {

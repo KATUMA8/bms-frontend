@@ -1,16 +1,13 @@
-
 export default function Home() {
   return (
     <>
-    {/* 管理者用のサイドバーを配置（roleFlag={1}） */}
-
-    <Sidebar roleFlag={1} />
-
-    {/* 右側のメインコンテンツエリア */}
-    <main className="main-content">
+      {/* 右側のメインコンテンツエリア */}
+      <main className="main-content">
         <header>
           <h1>ダッシュボード</h1>
-          <div className="login-status">お疲れ様です、<strong>山田 太郎</strong>さん</div>
+          <div className="login-status">
+            お疲れ様です、<strong>山田 太郎</strong>さん
+          </div>
         </header>
 
         <div className="dashboard-grid">
@@ -29,9 +26,7 @@ export default function Home() {
               <tbody>
                 {/* ダミーのデータ（あとでAPIから取得するように変更します） */}
                 <tr>
-                  <td>
-                    現在、対応が必要な案件はありません。
-                  </td>
+                  <td colSpan="4">現在、対応が必要な案件はありません。</td>
                 </tr>
               </tbody>
             </table>
@@ -51,9 +46,7 @@ export default function Home() {
               </thead>
               <tbody>
                 <tr>
-                  <td colSpan="4">
-                    現在、判定待ちの案件はありません。
-                  </td>
+                  <td colSpan="4">現在、判定待ちの案件はありません。</td>
                 </tr>
               </tbody>
             </table>
@@ -61,5 +54,5 @@ export default function Home() {
         </div>
       </main>
     </>
-  )
+  );
 }

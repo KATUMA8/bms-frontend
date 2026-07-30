@@ -1,14 +1,19 @@
-import Home from "./pages/Home"
+import { Outlet } from "react-router";
+import Home from "./pages/Home";
+import Sidebar from "./components/Sidebar";
 
 function App() {
-
   return (
-   <div>
- {/* 共通のサイドバー（一旦管理者固定、またはroleFlagを渡す） */}
+    <>
+      {/* 共通のサイドバーやヘッダーを置く場合はここに書きます */}
       <Sidebar roleFlag={1} />
- <Home/>
- </div>
-  )
+
+      {/* URLに応じて切り替わる子ページ（Homeなど）がここに表示されます */}
+      <main className="main-content">
+        <Outlet />
+      </main>
+    </>
+  );
 }
 
-export default App
+export default App;

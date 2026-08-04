@@ -4,7 +4,7 @@ import Sidebar from "./components/Sidebar";
 
 function App() {
   return (
-    <>
+    <div className="app-container">
       {/* 共通のサイドバーやヘッダーを置く場合はここに書きます */}
       <Sidebar roleFlag={1} />
 
@@ -12,7 +12,7 @@ function App() {
       <main className="main-content">
         <Outlet />
       </main>
-    </>
+    </div>
   );
 }
 

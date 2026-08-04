@@ -79,7 +79,7 @@ export default function ClientList() {
     currentItems: currentClients,
     handleSelectKana,
     handlePageChange,
-  } = usePaginationFilter(clients, 8); // 1ページ3件表示の例
+  } = usePaginationFilter(clients, 8); // 1ページ8件表示の例
 
   return (
       <div className="content-wrapper">

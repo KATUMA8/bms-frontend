@@ -1,3 +1,4 @@
+// ページ分割用
 import { useState } from "react";
 
 export function usePaginationFilter(items, itemsPerPage = 10) {
@@ -28,11 +29,19 @@ export function usePaginationFilter(items, itemsPerPage = 10) {
     }
   });
 
+  // ★ 2. あいうえお順（フリガナ順）にソートする処理を追加
+const sortedItems = [...filteredItems].sort((a, b) => {
+  const kanaA = a.clientKana || "";
+  const kanaB = b.clientKana || "";
+  // 文字列の比較（localeCompareを使うと日本語の五十音順・辞書順に正しく並び替えてくれます）
+  return kanaA.localeCompare(kanaB, "ja");
+});
+
   // 2. ページネーション計算
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+ const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentItems = sortedItems.slice(indexOfFirstItem, indexOfLastItem);
 
   // ハンドラー
   const handleSelectKana = (kana) => {

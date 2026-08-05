@@ -1,24 +1,26 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { formatPhone, formatPostal } from "../../utils/formatUtils";
 
 export default function ClientDetail() {
-
-    const { id } = useParams(); // URLから顧客IDを取得 (例: /clients/1 の "1")
-    const navigate = useNavigate();
+  const { id } = useParams(); // URLから顧客IDを取得 (例: /clients/1 の "1")
+  const navigate = useNavigate();
 
   // ダミーデータまたはAPIから取得するデータ用のステート
   const [client, setClient] = useState({
     clientId: id,
     clientName: "サンプル株式会社",
     clientKana: "サンプルカブシキガイシャ",
-    formattedClientPostalcode: "123-4567",
+    clientPostalcode: "123-4567",
     clientAddress: "東京都文京区...",
-    formattedClientPhone: "03-0000-0000",
+    clientPhone: "03-0000-0000",
   });
 
   const [projects, setProjects] = useState([
     { projectId: 1, projectName: "システム開発案件", status: "進行中" },
     { projectId: 2, projectName: "ホームページ改修", status: "完了" },
+    { projectId: 3, projectName: "ホームページ作成", status: "進行中" },
+    { projectId: 4, projectName: "ホームページ改修", status: "休止中" },
   ]);
 
   const [successMessage, setSuccessMessage] = useState("");
@@ -38,7 +40,9 @@ export default function ClientDetail() {
       </header>
 
       {/* 成功メッセージ */}
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
+      {successMessage && (
+        <div className="alert alert-success">{successMessage}</div>
+      )}
 
       {/* 顧客基本情報カード */}
       <div className="card">
@@ -49,12 +53,14 @@ export default function ClientDetail() {
             <dd>{client.clientName}</dd>
           </div>
           <div className="detail-item">
-            <dt>読み仮名</dt>
+            <dt>フリガナ</dt>
+            {/* client.clientKana を正しく参照 */}
             <dd>{client.clientKana}</dd>
           </div>
           <div className="detail-item">
             <dt>郵便番号</dt>
-            <dd>{client.formattedClientPostalcode}</dd>
+            {/* client.clientPostalcode を渡す */}
+            <dd>{formatPostal(client.clientPostalcode)}</dd>
           </div>
           <div className="detail-item">
             <dt>住所</dt>
@@ -62,20 +68,29 @@ export default function ClientDetail() {
           </div>
           <div className="detail-item">
             <dt>電話番号</dt>
-            <dd>{client.formattedClientPhone}</dd>
+            {/* utilsの関数でその場でフォーマット */}
+            <dd>{formatPhone(client.clientPhone)}</dd>
           </div>
           <div className="detail-item">
             <dt>関連資料</dt>
             <dd>
-              <Link to={`/clients/${client.clientId}/documents`}>資料一覧へ</Link>
+              <Link to={`/clients/${client.clientId}/documents`}>
+                資料一覧へ
+              </Link>
             </dd>
           </div>
         </dl>
 
         <div className="action-buttons-form">
-          <Link to={`/clients/edit/${client.clientId}`} className="btn">編集</Link>
-          <button type="button" className="btn" onClick={handleDelete}>削除</button>
-          <Link to="/clients" className="btn">顧客一覧へ戻る</Link>
+          <Link to={`/clients/edit/${client.clientId}`} className="btn">
+            編集
+          </Link>
+          <button type="button" className="btn" onClick={handleDelete}>
+            削除
+          </button>
+          <Link to="/clients" className="btn">
+            顧客一覧へ戻る
+          </Link>
         </div>
       </div>
 
@@ -97,14 +112,18 @@ export default function ClientDetail() {
                   <td data-label="案件名">{p.projectName}</td>
                   <td data-label="ステータス">{p.status}</td>
                   <td data-label="操作">
-                    <Link to={`/projects/${p.projectId}`} className="btn">詳細</Link>
+                    <Link to={`/projects/${p.projectId}`} className="btn">
+                      詳細
+                    </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="no-data">現在、この顧客に紐づく案件はありません。</div>
+          <div className="no-data">
+            現在、この顧客に紐づく案件はありません。
+          </div>
         )}
       </div>
     </div>

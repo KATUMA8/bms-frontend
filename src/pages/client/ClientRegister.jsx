@@ -1,23 +1,43 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { normalizeKana } from "../../utils/formatUtils";
+import { usePostalCode } from "../../hooks/usePostalCode";
 
-export default function ClientAdd() {
+export default function ClientRegister() {
   const navigate = useNavigate();
 
   // 入力フォームの状態管理
   const [formData, setFormData] = useState({
     clientName: "",
     clientKana: "",
-    clientPostalcode: "",
     clientAddress: "",
     clientPhone: "",
   });
 
+  // 郵便番号フック：7桁になったら自動で住所をformDataのclientAddressにセットする
+  // 郵便番号フック：formatAndFetchPostalCode も一緒に受け取る
+  const { postalCode, handlePostalChange, formatAndFetchPostalCode } = usePostalCode(
+    formData.clientPostalcode, // 初期値
+    (fetchedAddress) => {
+      // 住所が見つかった時の処理
+      setFormData((prev) => ({
+        ...prev,
+        clientAddress: fetchedAddress,
+      }));
+    },
+    (cleanedPostal) => {
+      // ★ここで親のフォームデータ側も綺麗な郵便番号に強制同期する！
+      setFormData((prev) => ({
+        ...prev,
+        clientPostalcode: cleanedPostal,
+      }));
+    }
+  );
+
   const [errors, setErrors] = useState({});
   const [hasError, setHasError] = useState(false);
 
-  // 通常の入力値変更ハンドラー
+  // 通常の入力値変更ハンドラー（顧客名、住所、電話番号用）
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -26,42 +46,12 @@ export default function ClientAdd() {
     }));
   };
 
-  // フリガナ専用の入力変更ハンドラー（漢字や不要な記号の混入を防ぐ）
-  const handleKanaChange = (e) => {
-    let value = e.target.value;
-    // ひらがなをカタカナに変換しつつ、それ以外の不要な文字を除去する
-    value = normalizeKana(value);
-
+  // フリガナ専用の入力変更ハンドラー（utilsの normalizeKana を直接使用）
+  const handleKanaBlurOrComposition = (e) => {
+    const normalized = normalizeKana(e.target.value);
     setFormData((prev) => ({
       ...prev,
-      clientKana: value,
-    }));
-  };
-
-  // 郵便番号専用の入力ハンドラー
-  const handlePostalChange = (e) => {
-    let value = e.target.value;
-
-    // 1. 全角数字を半角数字に変換
-    value = value.replace(/[０-９]/g, (s) =>
-      String.fromCharCode(s.charCodeAt(0) - 0xfee0),
-    );
-
-    // 2. 数字以外の文字（ハイフンなど）をすべて除去
-    value = value.replace(/[^0-9]/g, "");
-
-    // 3. 最大7桁までに制限
-    if (value.length > 7) {
-      value = value.slice(0, 7);
-    }
-
-    // DOM側の値を強制書き換え
-    e.target.value = value;
-
-    // Reactのステートを更新
-    setFormData((prev) => ({
-      ...prev,
-      clientPostalcode: value,
+      clientKana: normalized,
     }));
   };
 
@@ -77,9 +67,9 @@ export default function ClientAdd() {
     if (!formData.clientKana.trim()) {
       newErrors.clientKana = "※フリガナは必須項目です。";
     }
-    if (!formData.clientPostalcode.trim()) {
+    if (!postalCode.trim()) {
       newErrors.clientPostalcode = "※郵便番号は必須項目です。";
-    } else if (formData.clientPostalcode.length !== 7) {
+    } else if (postalCode.length !== 7) {
       newErrors.clientPostalcode =
         "※郵便番号はハイフンなし(例:1234567)の形式で入力してください。";
     }
@@ -104,8 +94,15 @@ export default function ClientAdd() {
 
     setHasError(false);
     setErrors({});
+
+    const submitData = {
+      ...formData,
+      clientPostalcode: postalCode,
+    };
+    console.log("送信データ:", submitData);
+
     alert("登録処理を実行しました（ダミー）");
-    navigate("/clients");
+    navigate("/clients/:id");
   };
 
   return (
@@ -115,8 +112,7 @@ export default function ClientAdd() {
       </header>
 
       <div className="card">
-        {/* YubinBangoを有効にするため h-adr クラスを付与 */}
-        <form onSubmit={handleSubmit} className="h-adr">
+        <form onSubmit={handleSubmit}>
           {hasError && (
             <div className="alert alert-danger">
               <p>
@@ -124,9 +120,6 @@ export default function ClientAdd() {
               </p>
             </div>
           )}
-
-          {/* YubinBango用の国名指定 */}
-          <input type="hidden" className="p-country-name" value="Japan" />
 
           <div className="form-vertical-layout">
             <div className="form-group-block">
@@ -155,22 +148,8 @@ export default function ClientAdd() {
                 name="clientKana"
                 value={formData.clientKana}
                 onChange={handleChange}
-                // 1. 日本語の変換（IME）が確定した瞬間に、utilsの関数で綺麗に整形する
-                onCompositionEnd={(e) => {
-                  const normalized = normalizeKana(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    clientKana: normalized,
-                  }));
-                }}
-                // 2. フォーカスが外れたときにも念のため同様に整形する
-                onBlur={(e) => {
-                  const normalized = normalizeKana(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    clientKana: normalized,
-                  }));
-                }}
+                onCompositionEnd={handleKanaBlurOrComposition}
+                onBlur={handleKanaBlurOrComposition}
                 placeholder="フリガナを入力"
                 className={errors.clientKana ? "field-error" : ""}
               />
@@ -186,10 +165,20 @@ export default function ClientAdd() {
               <input
                 type="text"
                 name="clientPostalcode"
+                value={postalCode}
                 onChange={handlePostalChange}
-                className={`p-postal-code ${errors.clientPostalcode ? "field-error" : ""}`}
+                onBlur={(e) => formatAndFetchPostalCode(e.target.value)}
+                onKeyDown={(e) => {
+                  // エンターキーが押されたとき
+                  if (e.key === "Enter") {
+                    e.preventDefault(); // フォームの誤送信を防ぐ
+                    formatAndFetchPostalCode(e.target.value); // 成型＆住所取得を実行
+                    e.target.blur(); // フォーカスを外して見た目も確定させる
+                  }
+                }}
+                className={errors.clientPostalcode ? "field-error" : ""}
                 placeholder="郵便番号を入力(ハイフンなし)"
-                maxLength="7"
+                autoComplete="off"
               />
               {errors.clientPostalcode && (
                 <span className="error-text">{errors.clientPostalcode}</span>
@@ -205,7 +194,7 @@ export default function ClientAdd() {
                 name="clientAddress"
                 value={formData.clientAddress}
                 onChange={handleChange}
-                className={`p-region p-locality p-street-address ${errors.clientAddress ? "field-error" : ""}`}
+                className={errors.clientAddress ? "field-error" : ""}
                 placeholder="顧客住所を入力"
               />
               {errors.clientAddress && (

@@ -1,29 +1,54 @@
 import { useState } from "react";
+import axios from "axios";
+import { normalize } from "../utils/formatUtils"; // ★ normalizeをインポート
 
-export function usePostalCode(initialValue = "") {
+export function usePostalCode(initialValue = "", onAddressFound, onPostalChange) {
   const [postalCode, setPostalCode] = useState(initialValue);
 
-  // 郵便番号の入力変更ハンドラー
   const handlePostalChange = (e) => {
-    let value = e.target.value;
+    const value = e.target.value;
+    setPostalCode(value);
+    if (onPostalChange) {
+      onPostalChange(value);
+    }
+  };
 
-    // 1. 全角数字を半角数字に変換
-    value = value.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+  const formatAndFetchPostalCode = async (valueToFormat) => {
+    const rawValue = valueToFormat !== undefined ? valueToFormat : postalCode;
 
-    // 2. 数字以外の文字（ハイフンなど）をすべて除去
-    value = value.replace(/[^0-9]/g, "");
+    // ★ formatUtils.js の normalize を使って一発で数字のみに正規化＆抽出！
+    let cleaned = normalize(rawValue);
 
-    // 3. 最大7桁までに制限
-    if (value.length > 7) {
-      value = value.slice(0, 7);
+    // どんなに長くても、強制的に「先頭の7文字」だけを切り出す
+    if (cleaned.length > 7) {
+      cleaned = cleaned.slice(0, 7);
     }
 
-    setPostalCode(value);
+    setPostalCode(cleaned);
+    if (onPostalChange) {
+      onPostalChange(cleaned);
+    }
+
+    if (cleaned.length === 7 && onAddressFound) {
+      try {
+        const response = await axios.get(
+          `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${cleaned}`
+        );
+        if (response.data.results && response.data.results[0]) {
+          const r = response.data.results[0];
+          const fullAddress = `${r.address1}${r.address2}${r.address3}`;
+          onAddressFound(fullAddress);
+        }
+      } catch (error) {
+        console.error("住所の取得に失敗しました", error);
+      }
+    }
   };
 
   return {
     postalCode,
     setPostalCode,
     handlePostalChange,
+    formatAndFetchPostalCode,
   };
 }

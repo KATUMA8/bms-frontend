@@ -10,6 +10,7 @@ export default function ClientList() {
     {
       clientId: 1,
       clientName: "株式会社テスト商事",
+      clientKana: "カブシキガイシャテスト",
       formattedClientPostalcode: "100-0001",
       clientAddress: "東京都千代田区1-1",
       formattedClientPhone: "03-1234-5678",
@@ -17,6 +18,7 @@ export default function ClientList() {
     {
       clientId: 2,
       clientName: "サンプル工業",
+      clientKana: "サンプルコウギョウ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -24,6 +26,7 @@ export default function ClientList() {
     {
       clientId: 3,
       clientName: "サンプル工業",
+      clientKana: "サンプルコウギョウ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -31,6 +34,7 @@ export default function ClientList() {
     {
       clientId: 4,
       clientName: "サンプル工業",
+      clientKana: "サンプルコウギョウ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -38,6 +42,7 @@ export default function ClientList() {
     {
       clientId: 5,
       clientName: "あ",
+      clientKana: "ア",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -45,6 +50,7 @@ export default function ClientList() {
     {
       clientId: 6,
       clientName: "か",
+      clientKana: "カ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -52,6 +58,7 @@ export default function ClientList() {
     {
       clientId: 7,
       clientName: "さ",
+      clientKana: "サ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -59,6 +66,7 @@ export default function ClientList() {
     {
       clientId: 8,
       clientName: "た",
+      clientKana: "タ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",
@@ -66,6 +74,7 @@ export default function ClientList() {
     {
       clientId: 9,
       clientName: "わ",
+      clientKana: "ワ",
       formattedClientPostalcode: "530-0001",
       clientAddress: "大阪府大阪市北区2-2",
       formattedClientPhone: "06-9876-5432",

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { normalizeKana } from "../../utils/formatUtils";
+import { normalize, normalizeKana } from "../../utils/formatUtils";
 import { usePostalCode } from "../../hooks/usePostalCode";
+import axios from "axios";
 
 export default function ClientRegister() {
   const navigate = useNavigate();
@@ -15,7 +16,6 @@ export default function ClientRegister() {
   });
 
   // 郵便番号フック：7桁になったら自動で住所をformDataのclientAddressにセットする
-  // 郵便番号フック：formatAndFetchPostalCode も一緒に受け取る
   const { postalCode, handlePostalChange, formatAndFetchPostalCode } = usePostalCode(
     formData.clientPostalcode, // 初期値
     (fetchedAddress) => {
@@ -26,7 +26,7 @@ export default function ClientRegister() {
       }));
     },
     (cleanedPostal) => {
-      // ★ここで親のフォームデータ側も綺麗な郵便番号に強制同期する！
+      // 親のフォームデータ側も綺麗な郵便番号に強制同期
       setFormData((prev) => ({
         ...prev,
         clientPostalcode: cleanedPostal,
@@ -40,13 +40,17 @@ export default function ClientRegister() {
   // 通常の入力値変更ハンドラー（顧客名、住所、電話番号用）
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // 電話番号（clientPhone）の場合は、入力された瞬間に normalize を通して半角数字のみにする
+    const newValue = name === "clientPhone" ? normalize(value) : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
   };
 
-  // フリガナ専用の入力変更ハンドラー（utilsの normalizeKana を直接使用）
+  // フリガナ専用の入力変更ハンドラー
   const handleKanaBlurOrComposition = (e) => {
     const normalized = normalizeKana(e.target.value);
     setFormData((prev) => ({
@@ -101,8 +105,20 @@ export default function ClientRegister() {
     };
     console.log("送信データ:", submitData);
 
-    alert("登録処理を実行しました（ダミー）");
-    navigate("/clients/:id");
+    // Spring BootのAPIへPOST送信
+    axios.post("http://localhost:8080/api/clients", submitData)
+      .then((res) => {
+        console.log("登録成功:", res.data);
+
+        // ★ 遷移先の /clients へメッセージをstateとして渡す
+        navigate("/clients", {
+          state: { message: "新規顧客情報を登録しました。" }
+        });
+      })
+      .catch((error) => {
+        console.error("登録エラー:", error);
+        alert("登録に失敗しました。入力内容を確認してください。");
+      });
   };
 
   return (
@@ -169,13 +185,13 @@ export default function ClientRegister() {
                 onChange={handlePostalChange}
                 onBlur={(e) => formatAndFetchPostalCode(e.target.value)}
                 onKeyDown={(e) => {
-                  // エンターキーが押されたとき
                   if (e.key === "Enter") {
-                    e.preventDefault(); // フォームの誤送信を防ぐ
-                    formatAndFetchPostalCode(e.target.value); // 成型＆住所取得を実行
-                    e.target.blur(); // フォーカスを外して見た目も確定させる
+                    e.preventDefault();
+                    formatAndFetchPostalCode(e.target.value);
+                    e.target.blur();
                   }
                 }}
+                maxLength="7"
                 className={errors.clientPostalcode ? "field-error" : ""}
                 placeholder="郵便番号を入力(ハイフンなし)"
                 autoComplete="off"
@@ -211,6 +227,7 @@ export default function ClientRegister() {
                 name="clientPhone"
                 value={formData.clientPhone}
                 onChange={handleChange}
+                maxLength="11"
                 placeholder="電話番号を入力(ハイフンなし)"
                 className={errors.clientPhone ? "field-error" : ""}
               />

@@ -1,33 +1,31 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { normalizeKana } from "../../utils/formatUtils";
+import axios from "axios";
+import { normalizeKana, normalize } from "../../utils/formatUtils";
 import { usePostalCode } from "../../hooks/usePostalCode";
 
 export default function ClientEdit() {
-  const { id } = useParams(); // URLから顧客IDを取得 (例: /clients/edit/1 の "1")
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  // 入力フォームの状態管理
   const [formData, setFormData] = useState({
     clientId: id,
     clientName: "",
     clientKana: "",
+    clientPostalcode: "",
     clientAddress: "",
     clientPhone: "",
   });
 
-  // 郵便番号フックの設定
-  const { postalCode, handlePostalChange, formatAndFetchPostalCode } = usePostalCode(
-    "", // 初期値は後からセット、または空
+  const { postalCode, setPostalCode, handlePostalChange, formatAndFetchPostalCode } = usePostalCode(
+    "",
     (fetchedAddress) => {
-      // 住所が見つかった時の処理
       setFormData((prev) => ({
         ...prev,
         clientAddress: fetchedAddress,
       }));
     },
     (cleanedPostal) => {
-      // 綺麗な郵便番号に同期
       setFormData((prev) => ({
         ...prev,
         clientPostalcode: cleanedPostal,
@@ -38,33 +36,41 @@ export default function ClientEdit() {
   const [errors, setErrors] = useState({});
   const [hasError, setHasError] = useState(false);
 
-  // 【本来のアプリではここでAPIを叩いて既存データを取得します】
+  // 既存データの取得（Spring Bootの /api/clients/edit/{id} に合わせる）
   useEffect(() => {
-    // ダミーの既存データ読み込み
-    const fetchedData = {
-      clientId: id,
-      clientName: "株式会社テスト商事",
-      clientKana: "カブシキガイシャテスト",
-      clientPostalcode: "1000001",
-      clientAddress: "東京都千代田区1-1",
-      clientPhone: "0312345678",
-    };
+    axios.get(`http://localhost:8080/api/clients/edit/${id}`)
+      .then((res) => {
+        const fetchedData = res.data;
 
-    setFormData(fetchedData);
-    // 郵便番号フック側にも初期値を反映させる
-    formatAndFetchPostalCode(fetchedData.clientPostalcode);
-  }, [id]);
+        setFormData({
+          clientId: fetchedData.clientId || id,
+          clientName: fetchedData.clientName || "",
+          clientKana: fetchedData.clientKana || "",
+          clientPostalcode: fetchedData.clientPostalcode ? normalize(fetchedData.clientPostalcode) : "",
+          clientAddress: fetchedData.clientAddress || "",
+          clientPhone: fetchedData.clientPhone ? normalize(fetchedData.clientPhone) : "",
+        });
 
-  // 通常の入力値変更ハンドラー
+        if (fetchedData.clientPostalcode) {
+          setPostalCode(normalize(fetchedData.clientPostalcode));
+        }
+      })
+      .catch((error) => {
+        console.error("データ取得エラー:", error);
+        alert("顧客情報の取得に失敗しました。");
+      });
+  }, [id, setPostalCode]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const newValue = name === "clientPhone" ? normalize(value) : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
   };
 
-  // フリガナ専用の入力変更ハンドラー
   const handleKanaBlurOrComposition = (e) => {
     const normalized = normalizeKana(e.target.value);
     setFormData((prev) => ({
@@ -73,7 +79,6 @@ export default function ClientEdit() {
     }));
   };
 
-  // 更新ボタン押下時の処理
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -117,10 +122,19 @@ export default function ClientEdit() {
       ...formData,
       clientPostalcode: postalCode,
     };
-    console.log("更新送信データ:", submitData);
 
-    alert("更新処理を実行しました（ダミー）");
-    navigate(`/clients/${id}`); // 更新後は詳細画面へ遷移
+    // 更新データの送信（Spring Bootの @PostMapping("/edit/{id}") に合わせる）
+    axios.post(`http://localhost:8080/api/clients/edit/${id}`, submitData)
+      .then((res) => {
+        // ★ 編集完了メッセージをstate経由で詳細画面へ渡す
+        navigate(`/clients/${id}`, {
+          state: { message: "顧客情報を更新しました。" }
+        });
+      })
+      .catch((error) => {
+        console.error("更新エラー:", error);
+        alert("顧客情報の更新に失敗しました。");
+      });
   };
 
   return (
@@ -227,6 +241,7 @@ export default function ClientEdit() {
                 name="clientPhone"
                 value={formData.clientPhone}
                 onChange={handleChange}
+                maxLength="11"
                 placeholder="電話番号を入力(ハイフンなし)"
                 className={errors.clientPhone ? "field-error" : ""}
               />
@@ -239,7 +254,7 @@ export default function ClientEdit() {
               <button type="submit" className="btn btn-primary">
                 更新する
               </button>
-              <Link to="/clients" className="btn btn-cancel">
+              <Link to={`/clients/${id}`} className="btn btn-cancel">
                 戻る
               </Link>
             </div>

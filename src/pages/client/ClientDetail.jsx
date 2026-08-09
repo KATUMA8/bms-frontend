@@ -1,37 +1,58 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams, useLocation } from "react-router";
 import { formatPhone, formatPostal } from "../../utils/formatUtils";
+import AlertMessage from "../../components/AlertMessage";
+import axios from "axios";
 
 export default function ClientDetail() {
   const { id } = useParams(); // URLから顧客IDを取得 (例: /clients/1 の "1")
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // ダミーデータまたはAPIから取得するデータ用のステート
-  const [client, setClient] = useState({
-    clientId: id,
-    clientName: "サンプル株式会社",
-    clientKana: "サンプルカブシキガイシャ",
-    clientPostalcode: "123-4567",
-    clientAddress: "東京都文京区...",
-    clientPhone: "03-0000-0000",
-  });
+  // 顧客データと案件データのステート（初期値は空っぽ）
+  const [client, setClient] = useState(null);
+  const [projects, setProjects] = useState([]);
 
-  const [projects, setProjects] = useState([
-    { projectId: 1, projectName: "システム開発案件", status: "進行中" },
-    { projectId: 2, projectName: "ホームページ改修", status: "完了" },
-    { projectId: 3, projectName: "ホームページ作成", status: "進行中" },
-    { projectId: 4, projectName: "ホームページ改修", status: "休止中" },
-  ]);
+  // 遷移元（編集画面など）から渡ってきたメッセージがあれば初期値に設定
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || "");
 
-  const [successMessage, setSuccessMessage] = useState("");
+  // Spring BootのAPIから顧客詳細と紐づく案件データを取得
+  useEffect(() => {
+    axios.get(`http://localhost:8080/api/clients/${id}`)
+      .then((res) => {
+        setClient(res.data.client);
+        setProjects(res.data.projects || []);
+      })
+      .catch((error) => {
+        console.error("データ取得エラー:", error);
+        alert("顧客情報の取得に失敗しました。");
+      });
+  }, [id]);
 
   // 削除処理のハンドラー
   const handleDelete = () => {
     if (window.confirm("本当に削除しますか？")) {
-      // 削除API呼び出し等の処理
-      navigate("/clients");
+      axios.delete(`http://localhost:8080/api/clients/${id}`)
+        .then(() => {
+          navigate("/clients", {
+            state: { message: "顧客情報を削除しました。" }
+          });
+        })
+        .catch((error) => {
+          console.error("削除エラー:", error);
+          alert("削除に失敗しました。");
+        });
     }
   };
+
+  // データがまだ読み込まれていない場合のガード
+  if (!client) {
+    return (
+      <div className="content-wrapper">
+        <p>読み込み中...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="content-wrapper">
@@ -39,10 +60,13 @@ export default function ClientDetail() {
         <h1>顧客詳細</h1>
       </header>
 
-      {/* 成功メッセージ */}
-      {successMessage && (
-        <div className="alert alert-success">{successMessage}</div>
-      )}
+      {/* ★ 共通化した AlertMessage コンポーネントを使用（5秒後に自動で消えます） */}
+      <AlertMessage
+        message={successMessage}
+        type="success"
+        duration={5000}
+        onClose={() => setSuccessMessage("")}
+      />
 
       {/* 顧客基本情報カード */}
       <div className="card">
@@ -54,12 +78,10 @@ export default function ClientDetail() {
           </div>
           <div className="detail-item">
             <dt>フリガナ</dt>
-            {/* client.clientKana を正しく参照 */}
             <dd>{client.clientKana}</dd>
           </div>
           <div className="detail-item">
             <dt>郵便番号</dt>
-            {/* client.clientPostalcode を渡す */}
             <dd>{formatPostal(client.clientPostalcode)}</dd>
           </div>
           <div className="detail-item">
@@ -68,7 +90,6 @@ export default function ClientDetail() {
           </div>
           <div className="detail-item">
             <dt>電話番号</dt>
-            {/* utilsの関数でその場でフォーマット */}
             <dd>{formatPhone(client.clientPhone)}</dd>
           </div>
           <div className="detail-item">

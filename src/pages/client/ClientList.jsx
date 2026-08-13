@@ -4,6 +4,9 @@ import KanaFilter from "../../components/KanaFilter";
 import AlertMessage from "../../components/AlertMessage";
 import { Link, useLocation } from "react-router";
 import axios from "axios";
+import Button from "../../atoms/Button";
+import PageHeader from "../../components/PageHeader";
+import NoDataMessage from "../../components/NoDataMessage";
 
 export default function ClientList() {
   const [clients, setClients] = useState([]);
@@ -13,7 +16,9 @@ export default function ClientList() {
 
   // ★ 遷移元のstateからメッセージを受け取る
   const location = useLocation();
-  const [successMessage, setSuccessMessage] = useState(location.state?.message || "");
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.message || "",
+  );
 
   // Spring BootのAPIからAxiosを使ってデータを取得
   useEffect(() => {
@@ -24,7 +29,8 @@ export default function ClientList() {
       params.kana = currentKana;
     }
 
-    axios.get("http://localhost:8080/api/clients", { params })
+    axios
+      .get("http://localhost:8080/api/clients", { params })
       .then((res) => {
         setClients(res.data.clients);
         setTotalPages(res.data.totalPages);
@@ -47,9 +53,7 @@ export default function ClientList() {
 
   return (
     <div className="content-wrapper">
-      <header>
-        <h1>顧客管理</h1>
-      </header>
+      <PageHeader title="顧客管理" />
 
       {/* ★ 共通化した AlertMessage コンポーネントを使用（5秒後に自動で消えます） */}
       <AlertMessage
@@ -60,19 +64,16 @@ export default function ClientList() {
       />
 
       <div className="action-bar">
-        <Link to="/clients/add" className="btn btn-primary">
+        <Button to="/clients/add" variant="primary">
           新規顧客登録
-        </Link>
+        </Button>
       </div>
 
       <div className="card">
         <h3>顧客一覧</h3>
 
         {/* カナフィルター */}
-        <KanaFilter
-          currentKana={currentKana}
-          onSelectKana={handleSelectKana}
-        />
+        <KanaFilter currentKana={currentKana} onSelectKana={handleSelectKana} />
 
         {/* 顧客テーブル */}
         {clients && clients.length > 0 ? (
@@ -94,21 +95,16 @@ export default function ClientList() {
                   <td data-label="住所">{c.clientAddress}</td>
                   <td data-label="電話番号">{c.formattedClientPhone}</td>
                   <td data-label="操作">
-                    <Link
-                      to={`/clients/${c.clientId}`}
-                      className="btn btn-primary"
-                    >
+                    <Button to={`/clients/${c.clientId}`} variant="primary">
                       詳細
-                    </Link>
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="no-data">
-            現在、登録されている顧客はありません。
-          </div>
+          <NoDataMessage />
         )}
 
         {/* 共通化したページネーションを呼び出す */}

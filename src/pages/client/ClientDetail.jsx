@@ -3,39 +3,54 @@ import { Link, useNavigate, useParams, useLocation } from "react-router";
 import { formatPhone, formatPostal } from "../../utils/formatUtils";
 import AlertMessage from "../../components/AlertMessage";
 import axios from "axios";
+import Button from "../../atoms/Button";
+import PageHeader from "../../components/PageHeader";
+import Loading from "../../components/Loading";
+import NoDataMessage from "../../components/NoDataMessage";
+import Pagination from "../../components/Pagination";
 
 export default function ClientDetail() {
-  const { id } = useParams(); // URLから顧客IDを取得 (例: /clients/1 の "1")
+  const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 顧客データと案件データのステート（初期値は空っぽ）
   const [client, setClient] = useState(null);
   const [projects, setProjects] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // 遷移元（編集画面など）から渡ってきたメッセージがあれば初期値に設定
-  const [successMessage, setSuccessMessage] = useState(location.state?.message || "");
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.message || "",
+  );
 
-  // Spring BootのAPIから顧客詳細と紐づく案件データを取得
+  // Spring BootのAPIから顧客詳細と指定ページの案件データを取得
   useEffect(() => {
-    axios.get(`http://localhost:8080/api/clients/${id}`)
+    axios
+      .get(`http://localhost:8080/api/clients/${id}?page=${currentPage}`)
       .then((res) => {
         setClient(res.data.client);
         setProjects(res.data.projects || []);
+        setTotalPages(res.data.totalPages || 1);
       })
       .catch((error) => {
         console.error("データ取得エラー:", error);
         alert("顧客情報の取得に失敗しました。");
       });
-  }, [id]);
+  }, [id, currentPage]);
+
+  // ページネーションのボタンが押されたときのハンドラー
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
 
   // 削除処理のハンドラー
   const handleDelete = () => {
     if (window.confirm("本当に削除しますか？")) {
-      axios.delete(`http://localhost:8080/api/clients/${id}`)
+      axios
+        .delete(`http://localhost:8080/api/clients/${id}`)
         .then(() => {
           navigate("/clients", {
-            state: { message: "顧客情報を削除しました。" }
+            state: { message: "顧客情報を削除しました。" },
           });
         })
         .catch((error) => {
@@ -45,22 +60,14 @@ export default function ClientDetail() {
     }
   };
 
-  // データがまだ読み込まれていない場合のガード
   if (!client) {
-    return (
-      <div className="content-wrapper">
-        <p>読み込み中...</p>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
     <div className="content-wrapper">
-      <header>
-        <h1>顧客詳細</h1>
-      </header>
+      <PageHeader title="顧客詳細" />
 
-      {/* ★ 共通化した AlertMessage コンポーネントを使用（5秒後に自動で消えます） */}
       <AlertMessage
         message={successMessage}
         type="success"
@@ -103,15 +110,15 @@ export default function ClientDetail() {
         </dl>
 
         <div className="action-buttons-form">
-          <Link to={`/clients/edit/${client.clientId}`} className="btn">
+          <Button to={`/clients/edit/${client.clientId}`} variant="primary">
             編集
-          </Link>
-          <button type="button" className="btn" onClick={handleDelete}>
+          </Button>
+          <Button type="button" variant="danger" onClick={handleDelete}>
             削除
-          </button>
-          <Link to="/clients" className="btn">
+          </Button>
+          <Button to="/clients" variant="cancel">
             顧客一覧へ戻る
-          </Link>
+          </Button>
         </div>
       </div>
 
@@ -119,32 +126,39 @@ export default function ClientDetail() {
       <div className="card">
         <h3>関連案件一覧</h3>
         {projects.length > 0 ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>案件名</th>
-                <th>ステータス</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((p) => (
-                <tr key={p.projectId}>
-                  <td data-label="案件名">{p.projectName}</td>
-                  <td data-label="ステータス">{p.status}</td>
-                  <td data-label="操作">
-                    <Link to={`/projects/${p.projectId}`} className="btn">
-                      詳細
-                    </Link>
-                  </td>
+          <>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>案件名</th>
+                  <th>ステータス</th>
+                  <th>操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {projects.map((p) => (
+                  <tr key={p.projectId}>
+                    <td data-label="案件名">{p.projectName}</td>
+                    <td data-label="ステータス">{p.status}</td>
+                    <td data-label="操作">
+                      <Link to={`/projects/${p.projectId}`} className="btn">
+                        詳細
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* サーバーサイド・ページング用コンポーネント */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
         ) : (
-          <div className="no-data">
-            現在、この顧客に紐づく案件はありません。
-          </div>
+          <NoDataMessage message="現在、この顧客に紐づく案件はありません。" />
         )}
       </div>
     </div>

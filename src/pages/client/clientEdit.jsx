@@ -1,44 +1,54 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import axios from "axios";
-import { normalizeKana, normalize } from "../../utils/formatUtils";
+import { normalize } from "../../utils/formatUtils";
 import { usePostalCode } from "../../hooks/usePostalCode";
+import { usePhone } from "../../hooks/usePhone"; // ★ 電話番号フックをインポート
+import FieldError from "../../components/FieldError";
+import FormAlert from "./../../components/FormAlert";
+import { useKanaNormalization } from "../../hooks/useKanaNormalization";
+import { FORM_LABELS } from "../../utils/formLabels";
+import { VALIDATION_MESSAGES } from "../../utils/validationMessages";
+import Button from "../../atoms/Button";
+import PageHeader from "../../components/PageHeader";
 
 export default function ClientEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // 顧客用のラベル定義を取得
+  const labels = FORM_LABELS.client;
+
   const [formData, setFormData] = useState({
     clientId: id,
     clientName: "",
     clientKana: "",
-    clientPostalcode: "",
     clientAddress: "",
-    clientPhone: "",
   });
 
-  const { postalCode, setPostalCode, handlePostalChange, formatAndFetchPostalCode } = usePostalCode(
-    "",
-    (fetchedAddress) => {
-      setFormData((prev) => ({
-        ...prev,
-        clientAddress: fetchedAddress,
-      }));
-    },
-    (cleanedPostal) => {
-      setFormData((prev) => ({
-        ...prev,
-        clientPostalcode: cleanedPostal,
-      }));
-    }
-  );
+  // ★ カスタムフックの呼び出し
+  const { handleKanaBlurOrComposition } = useKanaNormalization(setFormData);
+
+  // 郵便番号フック
+  const {
+    postalCode,
+    setPostalCode,
+    handlePostalChange,
+    formatAndFetchPostalCode,
+  } = usePostalCode("", (fetchedAddress) => {
+    setFormData((prev) => ({ ...prev, clientAddress: fetchedAddress }));
+  });
+
+  // ★ 電話番号フック
+  const { phone, setPhone, handlePhoneChange } = usePhone("");
 
   const [errors, setErrors] = useState({});
   const [hasError, setHasError] = useState(false);
 
-  // 既存データの取得（Spring Bootの /api/clients/edit/{id} に合わせる）
+  // 既存データの取得
   useEffect(() => {
-    axios.get(`http://localhost:8080/api/clients/edit/${id}`)
+    axios
+      .get(`http://localhost:8080/api/clients/edit/${id}`)
       .then((res) => {
         const fetchedData = res.data;
 
@@ -46,36 +56,28 @@ export default function ClientEdit() {
           clientId: fetchedData.clientId || id,
           clientName: fetchedData.clientName || "",
           clientKana: fetchedData.clientKana || "",
-          clientPostalcode: fetchedData.clientPostalcode ? normalize(fetchedData.clientPostalcode) : "",
           clientAddress: fetchedData.clientAddress || "",
-          clientPhone: fetchedData.clientPhone ? normalize(fetchedData.clientPhone) : "",
         });
 
         if (fetchedData.clientPostalcode) {
           setPostalCode(normalize(fetchedData.clientPostalcode));
+        }
+        if (fetchedData.clientPhone) {
+          setPhone(normalize(fetchedData.clientPhone)); // ★ 電話番号の初期値をセット
         }
       })
       .catch((error) => {
         console.error("データ取得エラー:", error);
         alert("顧客情報の取得に失敗しました。");
       });
-  }, [id, setPostalCode]);
+  }, [id, setPostalCode, setPhone]);
 
+  // ★ 電話番号の個別分岐が不要になり、非常にシンプルに
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const newValue = name === "clientPhone" ? normalize(value) : value;
-
     setFormData((prev) => ({
       ...prev,
-      [name]: newValue,
-    }));
-  };
-
-  const handleKanaBlurOrComposition = (e) => {
-    const normalized = normalizeKana(e.target.value);
-    setFormData((prev) => ({
-      ...prev,
-      clientKana: normalized,
+      [name]: value,
     }));
   };
 
@@ -85,28 +87,32 @@ export default function ClientEdit() {
     const newErrors = {};
 
     if (!formData.clientName.trim()) {
-      newErrors.clientName = "※顧客名は必須項目です。";
+      newErrors.clientName = VALIDATION_MESSAGES.required(labels.clientName);
     }
     if (!formData.clientKana.trim()) {
-      newErrors.clientKana = "※フリガナは必須項目です。";
+      newErrors.clientKana = VALIDATION_MESSAGES.required(labels.clientKana);
     }
     if (!postalCode.trim()) {
-      newErrors.clientPostalcode = "※郵便番号は必須項目です。";
+      newErrors.clientPostalcode = VALIDATION_MESSAGES.required(
+        labels.clientPostalcode,
+      );
     } else if (postalCode.length !== 7) {
-      newErrors.clientPostalcode =
-        "※郵便番号はハイフンなし(例:1234567)の形式で入力してください。";
+      newErrors.clientPostalcode = VALIDATION_MESSAGES.postalCodeFormat(
+        labels.clientPostalcode,
+      );
     }
     if (!formData.clientAddress.trim()) {
-      newErrors.clientAddress = "※住所は必須項目です。";
+      newErrors.clientAddress = VALIDATION_MESSAGES.required(
+        labels.clientAddress,
+      );
     }
-    if (!formData.clientPhone.trim()) {
-      newErrors.clientPhone = "※電話番号は必須項目です。";
-    } else if (
-      formData.clientPhone.length < 10 ||
-      formData.clientPhone.length > 11
-    ) {
-      newErrors.clientPhone =
-        "※電話番号はハイフンなし(例:09012345678)の形式で入力してください。";
+    // ★ バリデーション時はフックから取得した `phone` をチェック
+    if (!phone.trim()) {
+      newErrors.clientPhone = VALIDATION_MESSAGES.required(labels.clientPhone);
+    } else if (phone.length < 10 || phone.length > 11) {
+      newErrors.clientPhone = VALIDATION_MESSAGES.phoneFormat(
+        labels.clientPhone,
+      );
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -118,17 +124,18 @@ export default function ClientEdit() {
     setHasError(false);
     setErrors({});
 
+    // ★ 送信データに postalCode と phone を合流させる
     const submitData = {
       ...formData,
       clientPostalcode: postalCode,
+      clientPhone: phone,
     };
 
-    // 更新データの送信（Spring Bootの @PostMapping("/edit/{id}") に合わせる）
-    axios.post(`http://localhost:8080/api/clients/edit/${id}`, submitData)
+    axios
+      .post(`http://localhost:8080/api/clients/edit/${id}`, submitData)
       .then((res) => {
-        // ★ 編集完了メッセージをstate経由で詳細画面へ渡す
         navigate(`/clients/${id}`, {
-          state: { message: "顧客情報を更新しました。" }
+          state: { message: "顧客情報を更新しました。" },
         });
       })
       .catch((error) => {
@@ -139,22 +146,16 @@ export default function ClientEdit() {
 
   return (
     <div className="content-wrapper">
-      <header>
-        <h1>顧客情報編集</h1>
-      </header>
+      <PageHeader title="顧客情報編集" />
 
       <div className="card">
         <form onSubmit={handleSubmit} className="edit-form">
-          {hasError && (
-            <div className="alert alert-danger">
-              <p>入力内容にエラーがあります。メッセージの内容を確認してください。</p>
-            </div>
-          )}
+          <FormAlert hasError={hasError} />
 
           <div className="form-vertical-layout">
             <div className="form-group-block">
               <label>
-                顧客名 <span className="required">(必須)</span>
+                {labels.clientName} <span className="required">(必須)</span>
               </label>
               <input
                 type="text"
@@ -164,14 +165,12 @@ export default function ClientEdit() {
                 placeholder="顧客名を入力"
                 className={errors.clientName ? "field-error" : ""}
               />
-              {errors.clientName && (
-                <span className="error-text">{errors.clientName}</span>
-              )}
+              <FieldError message={errors.clientName} />
             </div>
 
             <div className="form-group-block">
               <label>
-                フリガナ <span className="required">(必須)</span>
+                {labels.clientKana} <span className="required">(必須)</span>
               </label>
               <input
                 type="text"
@@ -183,14 +182,13 @@ export default function ClientEdit() {
                 placeholder="フリガナを入力"
                 className={errors.clientKana ? "field-error" : ""}
               />
-              {errors.clientKana && (
-                <span className="error-text">{errors.clientKana}</span>
-              )}
+              <FieldError message={errors.clientKana} />
             </div>
 
             <div className="form-group-block">
               <label>
-                郵便番号 <span className="required">(必須)</span>
+                {labels.clientPostalcode}{" "}
+                <span className="required">(必須)</span>
               </label>
               <input
                 type="text"
@@ -210,14 +208,12 @@ export default function ClientEdit() {
                 className={errors.clientPostalcode ? "field-error" : ""}
                 autoComplete="off"
               />
-              {errors.clientPostalcode && (
-                <span className="error-text">{errors.clientPostalcode}</span>
-              )}
+              <FieldError message={errors.clientPostalcode} />
             </div>
 
             <div className="form-group-block">
               <label>
-                住所 <span className="required">(必須)</span>
+                {labels.clientAddress} <span className="required">(必須)</span>
               </label>
               <input
                 type="text"
@@ -227,36 +223,33 @@ export default function ClientEdit() {
                 placeholder="顧客住所を入力"
                 className={errors.clientAddress ? "field-error" : ""}
               />
-              {errors.clientAddress && (
-                <span className="error-text">{errors.clientAddress}</span>
-              )}
+              <FieldError message={errors.clientAddress} />
             </div>
 
             <div className="form-group-block">
               <label>
-                電話番号 <span className="required">(必須)</span>
+                {labels.clientPhone} <span className="required">(必須)</span>
               </label>
+              {/* ★ 電話番号はフックの値とハンドラーを直接バインド */}
               <input
                 type="text"
                 name="clientPhone"
-                value={formData.clientPhone}
-                onChange={handleChange}
+                value={phone}
+                onChange={handlePhoneChange}
                 maxLength="11"
                 placeholder="電話番号を入力(ハイフンなし)"
                 className={errors.clientPhone ? "field-error" : ""}
               />
-              {errors.clientPhone && (
-                <span className="error-text">{errors.clientPhone}</span>
-              )}
+              <FieldError message={errors.clientPhone} />
             </div>
 
             <div className="action-buttons-form">
-              <button type="submit" className="btn btn-primary">
+              <Button type="submit" variant="primary">
                 更新する
-              </button>
-              <Link to={`/clients/${id}`} className="btn btn-cancel">
+              </Button>
+              <Button to={`/clients/${id}`} variant="cancel">
                 戻る
-              </Link>
+              </Button>
             </div>
           </div>
         </form>

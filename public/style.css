@@ -159,13 +159,18 @@ textarea {
 }
 
 .btn {
-	padding: 12px 24px;
+	padding: 10px 20px;
+	height: 42px;              /* ← 高さを完全に固定してボタンのバラつきを防ぐ */
 	border-radius: 8px;
-	border: none;
+	border: none;              /* 枠線によるズレを防ぐため基本はnone、必要ならborder-colorを指定 */
 	cursor: pointer;
 	font-weight: bold;
+	font-size: 0.95rem;
 	text-decoration: none;
-	display: inline-block;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;    /* 必須：paddingやborderを高さに含める */
 	transition: 0.2s;
 	text-align: center;
 }
@@ -176,13 +181,25 @@ textarea {
 }
 
 .btn-primary:hover {
+	filter: brightness(90%);
+}
 
-	background: #2980b9;
+.btn-danger {
+	background-color: var(--danger); /* 既存の --danger (darkred) を使用 */
+	color: var(--white);
+	border: none;
+}
+
+.btn-danger:hover {
+	filter: brightness(90%); /* ホバー時に少し暗くする */
+}
+
+.btn-cancel:hover {
+	background-color: #cbd5e1;
 }
 
 .btn:hover {
-    background-color: #e9ecef;
-    border-color: #b2bec3;
+	filter: brightness(95%);
 }
 
 /* 既に個別に色設定があるボタン（btn-primaryなど）を壊さないための工夫 */
@@ -739,12 +756,19 @@ textarea.field-error {
 }
 
 /* ボタン配置の調整 */
-/*.action-buttons-form {*/
-/*	display: flex;*/
-/*	justify-content: flex-start;*/
-/*	 登録ボタンを左寄せ */
-/*	margin-top: 20px;*/
-/*}*/
+.action-buttons-form {
+	display: flex;
+	align-items: center;  /* ← これにより高さや縦位置が強制的に中央揃えになります */
+	gap: 10px;           /* ボタン同士の間隔 */
+	margin-top: 20px;
+}
+
+.client-detail-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 20px;
+}
 
 /* プレビュー枠を固定 */
 .preview-box {

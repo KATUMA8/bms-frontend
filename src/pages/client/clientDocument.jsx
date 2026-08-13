@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router";
 import AlertMessage from "../../components/AlertMessage";
 import axios from "axios";
+import Button from "../../atoms/Button";
+import PageHeader from "../../components/PageHeader";
+import Loading from "../../components/Loading";
 
 export default function ClientDocuments() {
   const { id } = useParams(); // URLから顧客IDを取得
@@ -25,7 +28,8 @@ export default function ClientDocuments() {
 
   // 初回マウント時にSpring Bootから顧客情報と資料一覧を取得
   useEffect(() => {
-    axios.get(`http://localhost:8080/api/clients/${id}/documents`)
+    axios
+      .get(`http://localhost:8080/api/clients/${id}/documents`)
       .then((res) => {
         setClient(res.data.client);
         setDocuments(res.data.documents || []);
@@ -61,11 +65,12 @@ export default function ClientDocuments() {
     data.append("docRemarks", formData.docRemarks || "");
     data.append("file", formData.file);
 
-    axios.post(`http://localhost:8080/api/clients/${id}/documents`, data, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    })
+    axios
+      .post(`http://localhost:8080/api/clients/${id}/documents`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
       .then((res) => {
         setSuccessMessage(res.data.message);
 
@@ -97,7 +102,8 @@ export default function ClientDocuments() {
   // 削除処理 (axios.delete)
   const handleDelete = (docId) => {
     if (window.confirm("資料を削除しますか？")) {
-      axios.delete(`http://localhost:8080/api/clients/${id}/documents/${docId}`)
+      axios
+        .delete(`http://localhost:8080/api/clients/${id}/documents/${docId}`)
         .then((res) => {
           setDocuments(documents.filter((doc) => doc.docId !== docId));
           setSuccessMessage(res.data.message);
@@ -111,25 +117,26 @@ export default function ClientDocuments() {
 
   // 読み込み中のガード
   if (!client) {
-    return (
-      <div className="content-wrapper">
-        <p>読み込み中...</p>
-      </div>
-    );
+    return <Loading />
   }
 
   return (
     <div className="content-wrapper">
-      <header>
-        <h1>関連資料一覧</h1>
-      </header>
+      <PageHeader title="関連資料一覧" />
 
       {/* 対象顧客表示 */}
       <div style={{ marginBottom: "25px" }}>
-        <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>対象顧客：</span>
+        <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+          対象顧客：
+        </span>
         <Link
           to={`/clients/${client.clientId}`}
-          style={{ fontWeight: "bold", textDecoration: "none", color: "var(--accent)", fontSize: "1.1rem" }}
+          style={{
+            fontWeight: "bold",
+            textDecoration: "none",
+            color: "var(--accent)",
+            fontSize: "1.1rem",
+          }}
         >
           {client.clientName}
         </Link>
@@ -213,10 +220,12 @@ export default function ClientDocuments() {
           </dl>
 
           <div className="action-buttons">
-            <button type="submit" className="btn btn-primary">登録する</button>
-            <Link to={`/clients/${client.clientId}`} className="btn btn-secondary">
+            <Button type="submit" variant="primary">
+              登録する
+            </Button>
+            <Button to={`/clients/${client.clientId}`} variant="cancel">
               顧客詳細へ戻る
-            </Link>
+            </Button>
           </div>
         </form>
       </div>
@@ -227,7 +236,9 @@ export default function ClientDocuments() {
         {documents.length > 0 ? (
           <div className="doc-grid">
             {documents.map((doc) => {
-              const isPdf = doc.docFilePath && doc.docFilePath.toLowerCase().endsWith(".pdf");
+              const isPdf =
+                doc.docFilePath &&
+                doc.docFilePath.toLowerCase().endsWith(".pdf");
               return (
                 <div className="doc-item" key={doc.docId}>
                   <div className="preview-box">
@@ -238,43 +249,56 @@ export default function ClientDocuments() {
                         title={doc.docTitle}
                       />
                     ) : (
-                      <img src={`http://localhost:8080/${doc.docFilePath}`} alt="プレビュー" />
+                      <img
+                        src={`http://localhost:8080/${doc.docFilePath}`}
+                        alt="プレビュー"
+                      />
                     )}
                   </div>
 
-                  <a href={`http://localhost:8080/${doc.docFilePath}`} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={`http://localhost:8080/${doc.docFilePath}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <strong>{doc.docTitle}</strong>
                   </a>
                   <div className="doc-meta">{doc.docType}</div>
                   <div className="doc-meta">
-                    {doc.docCreatedAt ? new Date(doc.docCreatedAt).toLocaleDateString() : ""}
+                    {doc.docCreatedAt
+                      ? new Date(doc.docCreatedAt).toLocaleDateString()
+                      : ""}
                   </div>
 
                   <div className="remarks-container">
                     {doc.docRemarks && (
                       <details>
                         <summary>備考を表示</summary>
-                        <p><span>{doc.docRemarks}</span></p>
+                        <p>
+                          <span>{doc.docRemarks}</span>
+                        </p>
                       </details>
                     )}
                   </div>
 
                   <div style={{ marginTop: "auto", paddingTop: "15px" }}>
-                    <button
+                    <Button
                       type="button"
-                      className="btn-text-danger"
+                      variant="danger"
                       onClick={() => handleDelete(doc.docId)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                      className="btn-text-danger"
                     >
                       削除
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p style={{ textAlign: "center", padding: "20px" }}>登録されている資料はありません。</p>
+          <p style={{ textAlign: "center", padding: "20px" }}>
+            登録されている資料はありません。
+          </p>
         )}
       </div>
     </div>

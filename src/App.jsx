@@ -1,14 +1,22 @@
 import { Outlet } from "react-router";
-import Home from "./pages/Home";
+// import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
 
 function App() {
-  return (
-    <div className="app-container">
-      {/* 共通のサイドバーやヘッダーを置く場合はここに書きます */}
-      <Sidebar roleFlag={1} />
+  // ※ 実際はContextやRedux、APIなどから現在のログインユーザーのロールを取得します
+  // 例: 1 = 管理者, 2 = 発注業者
+  const roleFlag = 2;
 
-      {/* URLに応じて切り替わる子ページ（Homeなど）がここに表示されます */}
+  // roleFlagが2（発注業者）なら "theme-contractee" という文字列をセット
+  const themeClass = roleFlag === 2 ? "theme-contractee" : "";
+
+  return (
+    // テンプレートリテラル（バッククォート ` ）を使ってクラスを結合します
+    <div className={`app-container ${themeClass}`}>
+
+      {/* サイドバーにも現在のロールを渡す */}
+      <Sidebar roleFlag={roleFlag} />
+
       <main className="main-content">
         <Outlet />
       </main>

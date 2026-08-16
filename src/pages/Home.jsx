@@ -1,155 +1,176 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
-import axios from "axios";
+import { useAtomValue } from "jotai";
+import loginUserAtom from "../atoms/loginUserAtom";
 import Pagination from "../components/Pagination";
 import Button from "../atoms/Button";
 import PageHeader from "../components/PageHeader";
+import DataTable from "../components/DataTable";
 import { getRemainingDaysText } from "../utils/dateUtils";
+import { projectApi } from "../api/projectApi";
+import { axiosInstance } from "../api/axiosInstance";
 
 export default function Home() {
-  // 見積待ち案件用のステート
-  const [needQuoteList, setNeedQuoteList] = useState([]);
-  const [quoteCurrentPage, setQuoteCurrentPage] = useState(1);
-  const [quoteTotalPages, setQuoteTotalPages] = useState(1);
+  const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 2,
+    name: "鈴木一郎",
+    roleFlag: 2, // あるいは発注業者としての判定値
+    companyId: 1
+  };
 
-  // 判定待ち案件用のステート
-  const [pendingList, setPendingList] = useState([]);
-  const [pendingCurrentPage, setPendingCurrentPage] = useState(1);
-  const [pendingTotalPages, setPendingTotalPages] = useState(1);
+  //  const loginUser = useAtomValue(loginUserAtom) || {
+  //   userId: 1,
+  //   name: "受注者",
+  //   roleFlag: 1, // あるいは発注業者としての判定値
+  //   companyId: null
+  // };
 
-  // 今日のおおまかな日付文字列（YYYY-MM-DD）を取得
+const isAdmin = loginUser?.roleFlag === 1; // 管理者かどうかの判定
+
+  // 上部セクション・下部セクションのページ番号をそれぞれ独立して管理
+  const [topPage, setTopPage] = useState(1);
+  const [bottomPage, setBottomPage] = useState(1);
+
+  const [topList, setTopList] = useState([]);
+  const [topTotalPages, setTopTotalPages] = useState(1);
+
+  const [bottomList, setBottomList] = useState([]);
+  const [bottomTotalPages, setBottomTotalPages] = useState(1);
+
   const today = new Date().toISOString().split("T")[0];
 
-  // コントローラーが受け取るパラメータ名 (qPage, pPage) に合わせる
+  // ロールが切り替わったときにページを1ページ目にリセットするオプション
   useEffect(() => {
-    axios
-      .get(
-        `http://localhost:8080/api/home?qPage=${quoteCurrentPage}&pPage=${pendingCurrentPage}`,
-      )
-      .then((res) => {
-        setNeedQuoteList(res.data.needQuoteList || []);
-        setQuoteTotalPages(res.data.qTotalPages || 1);
+    const qPage = isAdmin ? topPage : bottomPage;
+    const pPage = isAdmin ? bottomPage : topPage;
 
-        setPendingList(res.data.pendingList || []);
-        setPendingTotalPages(res.data.pTotalPages || 1);
+    // 管理者は /home、発注業者は /contractee/home を呼び出す
+    const apiCall = isAdmin
+      ? projectApi.getHomeData(qPage, pPage)
+      : axiosInstance.get("/contractee/home", { params: { qPage, pPage } });
+
+    apiCall
+      .then((response) => {
+        // axios の場合は response.data、直接オブジェクトの場合は response
+        const res = response.data || response;
+        if (res) {
+          if (isAdmin) {
+            // 管理者の場合
+            setTopList(res.needQuoteList || []);
+            setTopTotalPages(res.qTotalPages || 1);
+            setBottomList(res.pendingList || []);
+            setBottomTotalPages(res.pTotalPages || 1);
+          } else {
+            // 発注業者の場合：上部に判定待ち、下部に見積待ち
+            setTopList(res.pendingList || []);
+            setTopTotalPages(res.pTotalPages || 1);
+            setBottomList(res.needQuoteList || []);
+            setBottomTotalPages(res.qTotalPages || 1);
+          }
+        }
       })
       .catch((error) => {
         console.error("ダッシュボードデータの取得に失敗しました", error);
       });
-  }, [quoteCurrentPage, pendingCurrentPage]);
+  }, [isAdmin, topPage, bottomPage]);
 
+  // ★ 上部セクション用のカラム定義
+  const topColumns = [
+    ...(isAdmin ? [] : [{
+      label: "期限",
+      render: (p) => {
+        const isExpired =
+          p.quoteStatus === "未判定" &&
+          p.deadlineDate &&
+          p.deadlineDate < today;
+        return (
+          <span className={isExpired ? "text-danger" : ""}>
+            {getRemainingDaysText(p.deadlineDate, today)}
+          </span>
+        );
+      },
+    }]),
+    { label: "顧客名", key: "clientName" },
+    ...(isAdmin ? [{ label: "発注業者", key: "companyName" }] : []),
+    { label: "案件名", key: "projectName" },
+    {
+      label: "操作",
+      render: (p) => (
+        <Button to={`/projects/${p.projectId}`} variant="secondary">
+          {isAdmin ? "詳細" : "判定"}
+        </Button>
+      ),
+    },
+  ];
+
+  // ★ 下部セクション用のカラム定義
+  const bottomColumns = [
+    ...(isAdmin ? [
+      {
+        label: "期限",
+        render: (p) => {
+          const isExpired =
+            p.quoteStatus === "未判定" &&
+            p.deadlineDate &&
+            p.deadlineDate < today;
+          return (
+            <span className={isExpired ? "text-danger" : ""}>
+              {getRemainingDaysText(p.deadlineDate, today)}
+            </span>
+          );
+        },
+      }
+    ] : []),
+    { label: "顧客", key: "clientName" },
+    { label: "案件名", key: "projectName" },
+    {
+      label: "操作",
+      render: (p) => (
+        <Button to={`/projects/${p.projectId}`} variant="secondary">
+          詳細
+        </Button>
+      ),
+    },
+  ];
+console.log("現在のloginUser:", loginUser);
+console.log("isAdmin判定:", isAdmin);
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="ダッシュボード">
         <div className="login-status">
-          お疲れ様です、<strong>山田 太郎</strong>さん
+          お疲れ様です、<strong>{loginUser?.name || "ゲスト"}</strong>さん
         </div>
       </PageHeader>
 
       <div className="dashboard-grid">
-        {/* 見積待ち案件カード */}
+        {/* 上部セクション */}
         <section className="card">
-          <h3>見積待ち案件</h3>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>顧客名</th>
-                <th>発注業者</th>
-                <th>案件名</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {needQuoteList.length > 0 ? (
-                needQuoteList.map((p) => (
-                  <tr key={p.projectId}>
-                    <td data-label="顧客名">{p.clientName}</td>
-                    <td data-label="発注業者">{p.companyName}</td>
-                    <td data-label="案件名">{p.projectName}</td>
-                    <td data-label="操作">
-                      <Button
-                        to={`/projects/${p.projectId}`}
-                        variant="secondary"
-                      >
-                        詳細
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4">現在、対応が必要な案件はありません。</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <h3>{isAdmin ? "見積待ち案件" : "判定待ち案件"}</h3>
+          {topList.length > 0 ? (
+            <DataTable columns={topColumns} data={topList} />
+          ) : (
+            <p style={{ textAlign: "center", padding: "20px" }}>現在、表示する案件はありません。</p>
+          )}
 
-          {/* 見積待ち用ページネーション */}
           <Pagination
-            currentPage={quoteCurrentPage}
-            totalPages={quoteTotalPages}
-            onPageChange={(newPage) => setQuoteCurrentPage(newPage)}
+            currentPage={topPage}
+            totalPages={topTotalPages}
+            onPageChange={(newPage) => setTopPage(newPage)}
           />
         </section>
 
-        {/* 判定待ち案件カード */}
+        {/* 下部セクション */}
         <section className="card">
-          <h3>判定待ち案件</h3>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>期限</th>
-                <th>顧客</th>
-                <th>案件名</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingList.length > 0 ? (
-                pendingList.map((p) => {
-                  // Thymeleafの isExpired(q) と同様の判定
-                  // ステータスが「未判定」かつ 期限日が今日より前のもの
-                  const isExpired =
-                    p.quoteStatus === "未判定" &&
-                    p.deadlineDate &&
-                    p.deadlineDate < today;
+          <h3>{isAdmin ? "判定待ち案件" : "見積待ち案件"}</h3>
+          {bottomList.length > 0 ? (
+            <DataTable columns={bottomColumns} data={bottomList} />
+          ) : (
+            <p style={{ textAlign: "center", padding: "20px" }}>現在、表示する案件はありません。</p>
+          )}
 
-                  return (
-                    <tr key={p.quoteId || p.projectId}>
-                      <td
-                        data-label="期限"
-                        className={isExpired ? "expired" : ""}
-                      >
-                        <span className={isExpired ? "text-danger" : ""}>
-                          {getRemainingDaysText(p.deadlineDate, today)}
-                        </span>
-                      </td>
-                      <td data-label="顧客名">{p.clientName}</td>
-                      <td data-label="案件名">{p.projectName}</td>
-                      <td data-label="操作">
-                        <Button
-                          to={`/projects/${p.projectId}`}
-                          variant="secondary"
-                        >
-                          詳細
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="4">現在、判定待ちの案件はありません。</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {/* 判定待ち用ページネーション */}
           <Pagination
-            currentPage={pendingCurrentPage}
-            totalPages={pendingTotalPages}
-            onPageChange={(newPage) => setPendingCurrentPage(newPage)}
+            currentPage={bottomPage}
+            totalPages={bottomTotalPages}
+            onPageChange={(newPage) => setBottomPage(newPage)}
           />
         </section>
       </div>

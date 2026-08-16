@@ -1,3 +1,5 @@
+import FieldError from "./FieldError";
+
 export default function FormInput({ label, name, value, onChange, error, required, type = "text", ...rest }) {
   return (
     <div className="form-group-block">

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "react-router";
 import { formatPhone, formatPostal } from "../../utils/formatUtils";
 import AlertMessage from "../../components/AlertMessage";
-import { clientApi } from "../../api/clientApi";
+import { companyApi } from "../../api/companyApi";
 import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import Loading from "../../components/Loading";
@@ -12,11 +12,11 @@ import DetailList from "../../components/DetailList";
 import DataTable from "../../components/DataTable";
 import { useDeleteHandler } from "../../hooks/useDeleteHandler";
 
-export default function ClientDetail() {
+export default function CompanyDetail() {
   const { id } = useParams();
   const location = useLocation();
 
-  const [client, setClient] = useState(null);
+  const [company, setCompany] = useState(null);
   const [projects, setProjects] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,15 +26,15 @@ export default function ClientDetail() {
   );
 
   const { handleDelete } = useDeleteHandler(
-    `/clients/${id}`,
-    "/clients",
-    "顧客情報を削除しました。"
+    `/companys/${id}`,
+    "/companys",
+    "業者情報を削除しました。"
   );
 
   useEffect(() => {
-    clientApi.getDetail(id, currentPage)
+    companyApi.getDetail(id, currentPage)
       .then((res) => {
-        setClient(res.client);
+        setCompany(res.company);
         setProjects(res.projects || []);
         setTotalPages(res.totalPages || 1);
       })
@@ -47,33 +47,26 @@ export default function ClientDetail() {
     setCurrentPage(newPage);
   };
 
-  if (!client) {
+  if (!company) {
     return <Loading />;
   }
 
   const detailItems = [
-    { label: "顧客名", value: client.clientName },
-    { label: "フリガナ", value: client.clientKana },
-    { label: "郵便番号", value: formatPostal(client.clientPostalcode) },
-    { label: "住所", value: client.clientAddress },
-    { label: "電話番号", value: formatPhone(client.clientPhone) },
-    {
-      label: "関連資料",
-      value: (
-        <Link to={`/clients/${client.clientId}/documents`}>
-          資料一覧へ
-        </Link>
-      ),
-    },
+    { label: "業者名", value: company.companyName },
+    { label: "フリガナ", value: company.companyKana },
+    { label: "郵便番号", value: formatPostal(company.companyPostalcode) },
+    { label: "住所", value: company.companyAddress },
+    { label: "電話番号", value: formatPhone(company.companyPhone) },
   ];
 
   const projectColumns = [
+    { label: "顧客名", key: "clientName" },
     { label: "案件名", key: "projectName" },
-    { label: "ステータス", key: "status" },
+    { label: "案件状態", key: "status" },
     {
       label: "操作",
       render: (p) => (
-        <Link to={`/projects/${p.projectId}`} className="btn">
+        <Link to={`/projects/${p.projectId}`} className="btn btn-primary">
           詳細
         </Link>
       ),
@@ -82,7 +75,7 @@ export default function ClientDetail() {
 
   return (
     <div className="content-wrapper">
-      <PageHeader title="顧客詳細" />
+      <PageHeader title="業者詳細" />
 
       <AlertMessage
         message={successMessage}
@@ -92,18 +85,18 @@ export default function ClientDetail() {
       />
 
       <div className="card">
-        <h3>顧客情報</h3>
+        <h3>業者情報</h3>
         <DetailList items={detailItems} />
 
-        <div className="action-buttons-form">
-          <Button to={`/clients/edit/${client.clientId}`} variant="primary">
+        <div className="action-buttons-form" style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+          <Button to={`/companys/edit/${company.companyId}`} variant="primary">
             編集
           </Button>
           <Button type="button" variant="danger" onClick={() => handleDelete()}>
             削除
           </Button>
-          <Button to="/clients" variant="cancel">
-            顧客一覧へ戻る
+          <Button to="/companys" variant="cancel">
+            業者一覧へ戻る
           </Button>
         </div>
       </div>
@@ -121,7 +114,7 @@ export default function ClientDetail() {
             />
           </>
         ) : (
-          <NoDataMessage message="現在、この顧客に紐づく案件はありません。" />
+          <NoDataMessage message="現在、この業者に紐づく案件はありません。" />
         )}
       </div>
     </div>

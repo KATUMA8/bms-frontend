@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import axios from "axios";
-import FieldError from "../../components/FieldError";
-import FormAlert from "../../components/FormAlert";
 import { FORM_LABELS } from "../../utils/formLabels";
 import { VALIDATION_MESSAGES } from "../../utils/validationMessages";
-import Button from "../../atoms/Button";
-import PageHeader from "../../components/PageHeader";
+import { projectApi } from "../../api/projectApi";
+import BaseProjectForm from "../../components/BaseProjectForm";
 
 export default function ProjectRegister() {
   const navigate = useNavigate();
-
-  // 案件用のラベル定義を取得
   const labels = FORM_LABELS.project;
 
   const [projectForm, setProjectForm] = useState({
@@ -24,65 +19,38 @@ export default function ProjectRegister() {
     projectRemarks: "",
   });
 
-  // セレクトボックス用の選択肢（顧客・業者一覧）
   const [clients, setClients] = useState([]);
   const [companies, setCompanies] = useState([]);
-
   const [errors, setErrors] = useState({});
   const [hasError, setHasError] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  // 初期表示時にセレクトボックス用のデータを取得
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/projects/form-data")
-      .then((res) => {
-        setClients(res.data.clients);
-        setCompanies(res.data.companies);
+    projectApi.getFormData()
+      .then((data) => {
+        setClients(data.clients);
+        setCompanies(data.companies);
       })
       .catch((err) => {
         console.error("フォームデータ取得エラー:", err);
       });
   }, []);
 
-  // 入力値変更時のハンドラー
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProjectForm({
-      ...projectForm,
-      [name]: value,
-    });
+    setProjectForm({ ...projectForm, [name]: value });
   };
 
-  // 登録ボタン押下時のフロントエンドバリデーション ＆ 送信処理
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const newErrors = {};
 
-    // 必須項目のチェック
-    if (!projectForm.projectName.trim()) {
-      newErrors.projectName = VALIDATION_MESSAGES.required(labels.projectName);
-    }
-    if (!projectForm.clientId) {
-      newErrors.clientId = VALIDATION_MESSAGES.required(labels.clientId);
-    }
-    if (!projectForm.companyId) {
-      newErrors.companyId = VALIDATION_MESSAGES.required(labels.companyId);
-    }
-    if (!projectForm.projectStaffname.trim()) {
-      newErrors.projectStaffname = VALIDATION_MESSAGES.required(
-        labels.projectStaffname,
-      );
-    }
-    if (!projectForm.contractType) {
-      newErrors.contractType = VALIDATION_MESSAGES.required(
-        labels.contractType,
-      );
-    }
-    if (!projectForm.status) {
-      newErrors.status = VALIDATION_MESSAGES.required(labels.status);
-    }
+    if (!projectForm.projectName.trim()) newErrors.projectName = VALIDATION_MESSAGES.required(labels.projectName);
+    if (!projectForm.clientId) newErrors.clientId = VALIDATION_MESSAGES.required(labels.clientId);
+    if (!projectForm.companyId) newErrors.companyId = VALIDATION_MESSAGES.required(labels.companyId);
+    if (!projectForm.projectStaffname.trim()) newErrors.projectStaffname = VALIDATION_MESSAGES.required(labels.projectStaffname);
+    if (!projectForm.contractType) newErrors.contractType = VALIDATION_MESSAGES.required(labels.contractType);
+    if (!projectForm.status) newErrors.status = VALIDATION_MESSAGES.required(labels.status);
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -94,18 +62,12 @@ export default function ProjectRegister() {
     setErrors({});
     setServerError("");
 
-    axios
-      .post("http://localhost:8080/api/projects/add", projectForm)
+    projectApi.add(projectForm)
       .then((res) => {
-        // サーバーから返却された新しく採番されたIDを取得する
-        const newProjectId = res.data.projectId;
-
-        // 登録成功後に、その案件の詳細画面へ遷移する
-        navigate(`/projects/${newProjectId}`, {
-          state: { message: res.data.message || "案件情報を登録しました。" },
+        navigate(`/projects/${res.projectId}`, {
+          state: { message: "新規案件を登録しました。" },
         });
       })
-
       .catch((err) => {
         if (err.response && err.response.status === 400) {
           const errorData = err.response.data;
@@ -121,7 +83,6 @@ export default function ProjectRegister() {
             setHasError(true);
           }
         } else {
-          console.error("登録エラー:", err);
           setServerError("登録処理に失敗しました。");
           setHasError(true);
         }
@@ -129,161 +90,19 @@ export default function ProjectRegister() {
   };
 
   return (
-    <div className="content-wrapper">
-      <PageHeader title="新規案件登録" />
-
-      <div className="card">
-        <form onSubmit={handleSubmit}>
-          {/* 共通の警告アラート */}
-          <FormAlert hasError={hasError} />
-
-          {serverError && (
-            <div
-              className="alert alert-danger"
-              style={{ marginBottom: "15px" }}
-            >
-              <p>{serverError}</p>
-            </div>
-          )}
-
-          <div className="form-vertical-layout">
-            {/* 案件名 */}
-            <div className="form-group-block">
-              <label>
-                {labels.projectName} <span className="required">(必須)</span>
-              </label>
-              <input
-                type="text"
-                name="projectName"
-                value={projectForm.projectName}
-                onChange={handleChange}
-                placeholder="案件名を入力"
-                className={errors.projectName ? "field-error" : ""}
-              />
-              <FieldError message={errors.projectName} />
-            </div>
-
-            {/* 顧客 */}
-            <div className="form-group-block">
-              <label>
-                {labels.clientId} <span className="required">(必須)</span>
-              </label>
-              <select
-                name="clientId"
-                value={projectForm.clientId}
-                onChange={handleChange}
-                className={errors.clientId ? "field-error" : ""}
-              >
-                <option value="">顧客を選択してください</option>
-                {clients.map((c) => (
-                  <option key={c.clientId} value={c.clientId}>
-                    {c.clientName}
-                  </option>
-                ))}
-              </select>
-              <FieldError message={errors.clientId} />
-            </div>
-
-            {/* 発注業者 */}
-            <div className="form-group-block">
-              <label>
-                {labels.companyId} <span className="required">(必須)</span>
-              </label>
-              <select
-                name="companyId"
-                value={projectForm.companyId}
-                onChange={handleChange}
-                className={errors.companyId ? "field-error" : ""}
-              >
-                <option value="">発注業者を選択してください</option>
-                {companies.map((comp) => (
-                  <option key={comp.companyId} value={comp.companyId}>
-                    {comp.companyName}
-                  </option>
-                ))}
-              </select>
-              <FieldError message={errors.companyId} />
-            </div>
-
-            {/* 担当者名 */}
-            <div className="form-group-block">
-              <label>
-                {labels.projectStaffname}{" "}
-                <span className="required">(必須)</span>
-              </label>
-              <input
-                type="text"
-                name="projectStaffname"
-                value={projectForm.projectStaffname}
-                onChange={handleChange}
-                placeholder="担当者名を入力"
-                className={errors.projectStaffname ? "field-error" : ""}
-              />
-              <FieldError message={errors.projectStaffname} />
-            </div>
-
-            {/* 契約種別 */}
-            <div className="form-group-block">
-              <label>
-                {labels.contractType} <span className="required">(必須)</span>
-              </label>
-              <select
-                name="contractType"
-                value={projectForm.contractType}
-                onChange={handleChange}
-                className={errors.contractType ? "field-error" : ""}
-              >
-                <option value="">契約種別を選択してください</option>
-                <option value="定期">定期</option>
-                <option value="臨時">臨時</option>
-              </select>
-              <FieldError message={errors.contractType} />
-            </div>
-
-            {/* 案件状態 */}
-            <div className="form-group-block">
-              <label>
-                {labels.status} <span className="required">(必須)</span>
-              </label>
-              <select
-                name="status"
-                value={projectForm.status}
-                onChange={handleChange}
-                className={errors.status ? "field-error" : ""}
-              >
-                <option value="">案件状態を選択してください</option>
-                <option value="進行中">進行中</option>
-                <option value="休止中">休止中</option>
-                <option value="完了">完了</option>
-              </select>
-              <FieldError message={errors.status} />
-            </div>
-
-            {/* 特記事項 */}
-            <div className="form-group-block">
-              <label>{labels.projectRemarks}</label>
-              <textarea
-                name="projectRemarks"
-                value={projectForm.projectRemarks}
-                onChange={handleChange}
-                placeholder="特記事項を入力"
-                rows="4"
-                className={errors.projectRemarks ? "field-error" : ""}
-              ></textarea>
-              <FieldError message={errors.projectRemarks} />
-            </div>
-
-            <div className="action-buttons">
-              <Button type="submit" variant="primary">
-                登録する
-              </Button>
-              <Button to="/projects" variant="cancel">
-                戻る
-              </Button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+    <BaseProjectForm
+      title="新規案件登録"
+      projectForm={projectForm}
+      clients={clients}
+      companies={companies}
+      errors={errors}
+      hasError={hasError}
+      serverError={serverError}
+      labels={labels}
+      onChange={handleChange}
+      onSubmit={handleSubmit}
+      isEdit={false}
+      cancelTo="/projects"
+    />
   );
 }

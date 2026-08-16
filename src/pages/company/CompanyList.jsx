@@ -3,14 +3,14 @@ import Pagination from "../../components/Pagination";
 import KanaFilter from "../../components/KanaFilter";
 import AlertMessage from "../../components/AlertMessage";
 import { useLocation } from "react-router";
-import { clientApi } from "../../api/clientApi";
+import { companyApi } from "../../api/companyApi";
 import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import NoDataMessage from "../../components/NoDataMessage";
 import DataTable from "../../components/DataTable";
 
-export default function ClientList() {
-  const [clients, setClients] = useState([]);
+export default function CompanyList() {
+  const [companys, setCompanys] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [currentKana, setCurrentKana] = useState("");
@@ -21,9 +21,9 @@ export default function ClientList() {
   );
 
   useEffect(() => {
-    clientApi.getList(currentPage, currentKana)
+    companyApi.getList(currentPage, currentKana)
       .then((res) => {
-        setClients(res.clients);
+        setCompanys(res.companys);
         setTotalPages(res.totalPages);
       })
       .catch((error) => {
@@ -41,14 +41,14 @@ export default function ClientList() {
   };
 
   const columns = [
-    { label: "顧客名", key: "clientName" },
-    { label: "郵便番号", key: "formattedClientPostalcode" },
-    { label: "住所", key: "clientAddress" },
-    { label: "電話番号", key: "formattedClientPhone" },
+    { label: "業者名", key: "companyName" },
+    { label: "郵便番号", key: "formattedCompanyPostalcode" },
+    { label: "住所", key: "companyAddress" },
+    { label: "電話番号", key: "formattedCompanyPhone" },
     {
       label: "操作",
       render: (c) => (
-        <Button to={`/clients/${c.clientId}`} variant="primary">
+        <Button to={`/companys/${c.companyId}`} variant="primary">
           詳細
         </Button>
       ),
@@ -57,7 +57,7 @@ export default function ClientList() {
 
   return (
     <div className="content-wrapper">
-      <PageHeader title="顧客管理" />
+      <PageHeader title="業者管理" />
 
       <AlertMessage
         message={successMessage}
@@ -67,20 +67,20 @@ export default function ClientList() {
       />
 
       <div className="action-bar">
-        <Button to="/clients/add" variant="primary">
-          新規顧客登録
+        <Button to="/companys/add" variant="primary">
+          新規業者登録
         </Button>
       </div>
 
       <div className="card">
-        <h3>顧客一覧</h3>
+        <h3>業者一覧</h3>
 
         <KanaFilter currentKana={currentKana} onSelectKana={handleSelectKana} />
 
-        {clients && clients.length > 0 ? (
-          <DataTable columns={columns} data={clients} />
+        {companys && companys.length > 0 ? (
+          <DataTable columns={columns} data={companys} />
         ) : (
-          <NoDataMessage />
+          <NoDataMessage message="現在、登録されている業者はありません。" />
         )}
 
         <Pagination

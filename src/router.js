@@ -11,6 +11,10 @@ import ProjectDetail from "./pages/project/ProjectDetail";
 import QuoteEdit from "./pages/quote/QuoteEdit";
 import ProjectRegister from "./pages/project/ProjectRegister";
 import ProjectEdit from "./pages/project/ProjectEdit";
+import CompanyList from "./pages/company/CompanyList";
+import CompanyRegister from "./pages/company/CompanyRegister";
+import CompanyEdit from "./pages/company/CompanyEdit";
+import CompanyDetail from "./pages/company/CompanyDetail";
 
 const router = createBrowserRouter([
   {
@@ -66,6 +70,22 @@ const router = createBrowserRouter([
         Component: QuoteEdit,
       },
       // --- 業者管理 ---
+      {
+        path: "companys",
+        Component: CompanyList,
+      },
+      {
+        path: "companys/add",
+        Component: CompanyRegister,
+      },
+      {
+        path: "companys/edit/:id",
+        Component: CompanyEdit,
+      },
+      {
+        path: "companys/:id",
+        Component: CompanyDetail,
+      },
     ],
   },
 ]);

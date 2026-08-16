@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, Link } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import PageHeader from "../../components/PageHeader";
-import axios from "axios";
+import Button from "../../atoms/Button";
+import DetailList from "../../components/DetailList";
+import { projectApi } from "../../api/projectApi";
 
 export default function QuoteEdit() {
-  const { pid, id } = useParams(); // URLから projectId と quoteId を取得
+  const { pid, id } = useParams();
   const navigate = useNavigate();
 
   const [quoteForm, setQuoteForm] = useState({
@@ -17,12 +19,10 @@ export default function QuoteEdit() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 編集初期データの取得
   useEffect(() => {
-    // 必要に応じてSpring Boot側から見積データを取得するAPIを叩く
-    axios.get(`http://localhost:8080/api/projects/${pid}/quotes/${id}`)
-      .then((res) => {
-        setQuoteForm(res.data);
+    projectApi.getQuote(pid, id)
+      .then((data) => {
+        setQuoteForm(data);
         setLoading(false);
       })
       .catch((err) => {
@@ -31,7 +31,6 @@ export default function QuoteEdit() {
       });
   }, [pid, id]);
 
-  // 更新処理
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -44,9 +43,7 @@ export default function QuoteEdit() {
       formData.append("file", file);
     }
 
-    axios.post(`http://localhost:8080/api/projects/${pid}/quotes/edit/${id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
+    projectApi.updateQuote(pid, id, formData)
       .then(() => {
         navigate(`/projects/${pid}`, { state: { message: "見積情報を更新しました。" } });
       })
@@ -58,6 +55,42 @@ export default function QuoteEdit() {
 
   if (loading) return <p>読み込み中...</p>;
 
+  const detailItems = [
+    {
+      label: "現在の見積書",
+      value: (
+        <a href={`http://localhost:8080/${quoteForm.quoteFilepath}`} target="_blank" rel="noreferrer">
+          PDFを確認
+        </a>
+      ),
+    },
+    {
+      label: "ファイルを選択",
+      value: (
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={(e) => setFile(e.target.files[0])}
+        />
+      ),
+    },
+    {
+      label: "判定期限",
+      value: (
+        <input
+          type="date"
+          value={quoteForm.deadlineDate || ""}
+          required
+          onChange={(e) => setQuoteForm({ ...quoteForm, deadlineDate: e.target.value })}
+        />
+      ),
+    },
+    {
+      label: "現在のステータス",
+      value: quoteForm.quoteStatus,
+    },
+  ];
+
   return (
     <div className="content-wrapper">
       <PageHeader title="見積編集" />
@@ -66,45 +99,11 @@ export default function QuoteEdit() {
         <h3>見積内容の編集</h3>
 
         <form onSubmit={handleSubmit}>
-          <dl className="detail-list">
-            <div className="detail-item">
-              <dt>現在の見積書</dt>
-              <dd>
-                <a href={`http://localhost:8080/${quoteForm.quoteFilepath}`} target="_blank" rel="noreferrer">
-                  PDFを確認
-                </a>
-              </dd>
-            </div>
-            <div className="detail-item">
-              <dt>ファイルを選択</dt>
-              <dd>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setFile(e.target.files[0])}
-                />
-              </dd>
-            </div>
-            <div className="detail-item">
-              <dt>判定期限</dt>
-              <dd>
-                <input
-                  type="date"
-                  value={quoteForm.deadlineDate || ""}
-                  required
-                  onChange={(e) => setQuoteForm({ ...quoteForm, deadlineDate: e.target.value })}
-                />
-              </dd>
-            </div>
-            <div className="detail-item">
-              <dt>現在のステータス</dt>
-              <dd>{quoteForm.quoteStatus}</dd>
-            </div>
-          </dl>
+          <DetailList items={detailItems} />
 
           <div className="action-buttons-form">
-            <button type="submit" className="btn btn-primary">更新する</button>
-            <Link to={`/projects/${pid}`} className="btn">キャンセル</Link>
+            <Button type="submit" variant="primary">更新する</Button>
+            <Button to={`/projects/${pid}`} variant="cancel">キャンセル</Button>
           </div>
         </form>
       </div>

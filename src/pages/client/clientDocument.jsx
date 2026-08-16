@@ -1,22 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router";
 import AlertMessage from "../../components/AlertMessage";
-import axios from "axios";
+import { clientApi } from "../../api/clientApi";
 import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import Loading from "../../components/Loading";
+import DetailList from "../../components/DetailList";
 
 export default function ClientDocuments() {
-  const { id } = useParams(); // URLから顧客IDを取得
-  const fileInputRef = useRef(null); // fileInputRef を定義
+  const { id } = useParams();
+  const fileInputRef = useRef(null);
 
-  // 対象顧客の情報
   const [client, setClient] = useState(null);
-
-  // 登録済み資料一覧の状態
   const [documents, setDocuments] = useState([]);
-
-  // 新規登録フォームの状態
   const [formData, setFormData] = useState({
     docTitle: "",
     docType: "機器一覧表",
@@ -26,21 +22,17 @@ export default function ClientDocuments() {
 
   const [successMessage, setSuccessMessage] = useState("");
 
-  // 初回マウント時にSpring Bootから顧客情報と資料一覧を取得
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/clients/${id}/documents`)
+    clientApi.getDocuments(id)
       .then((res) => {
-        setClient(res.data.client);
-        setDocuments(res.data.documents || []);
+        setClient(res.client);
+        setDocuments(res.documents || []);
       })
       .catch((error) => {
         console.error("データ取得エラー:", error);
-        alert("資料情報の取得に失敗しました。");
       });
   }, [id]);
 
-  // 入力値変更ハンドラー
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "file") {
@@ -50,7 +42,6 @@ export default function ClientDocuments() {
     }
   };
 
-  // 資料登録ボタン押下時の処理
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -65,66 +56,116 @@ export default function ClientDocuments() {
     data.append("docRemarks", formData.docRemarks || "");
     data.append("file", formData.file);
 
-    axios
-      .post(`http://localhost:8080/api/clients/${id}/documents`, data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
+    clientApi.addDocument(id, data)
       .then((res) => {
-        setSuccessMessage(res.data.message);
-
-        // ファイル（file: null）だけをリセットし、分類等はそのまま保持する
+        setSuccessMessage(res.message);
         setFormData((prev) => ({
           ...prev,
           file: null,
         }));
 
-        // ファイル選択の input 要素の表示をクリアする
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
 
-        // 一覧を再取得
-        return axios.get(`http://localhost:8080/api/clients/${id}/documents`);
+        return clientApi.getDocuments(id);
       })
       .then((res) => {
         if (res) {
-          setDocuments(res.data.documents || []);
+          setDocuments(res.documents || []);
         }
       })
       .catch((error) => {
         console.error("登録エラー:", error);
-        alert("資料の登録に失敗しました。");
       });
   };
 
-  // 削除処理 (axios.delete)
   const handleDelete = (docId) => {
     if (window.confirm("資料を削除しますか？")) {
-      axios
-        .delete(`http://localhost:8080/api/clients/${id}/documents/${docId}`)
+      clientApi.deleteDocument(id, docId)
         .then((res) => {
           setDocuments(documents.filter((doc) => doc.docId !== docId));
-          setSuccessMessage(res.data.message);
+          setSuccessMessage(res.message);
         })
         .catch((error) => {
           console.error("削除エラー:", error);
-          alert("資料の削除に失敗しました。");
         });
     }
   };
 
-  // 読み込み中のガード
   if (!client) {
-    return <Loading />
+    return <Loading />;
   }
+
+  const formItems = [
+    {
+      label: "資料名",
+      value: (
+        <input
+          type="text"
+          name="docTitle"
+          value={formData.docTitle}
+          onChange={handleChange}
+          required
+          style={{ width: "100%", boxSizing: "border-box" }}
+          placeholder="資料名を入力"
+        />
+      ),
+    },
+    {
+      label: "分類",
+      value: (
+        <select
+          name="docType"
+          value={formData.docType}
+          onChange={handleChange}
+          style={{ width: "100%" }}
+        >
+          <option value="機器一覧表">機器一覧表</option>
+          <option value="機器配置図">機器配置図</option>
+          <option value="画像">画像</option>
+          <option value="その他">その他</option>
+        </select>
+      ),
+    },
+    {
+      label: "備考",
+      value: (
+        <textarea
+          name="docRemarks"
+          value={formData.docRemarks}
+          onChange={handleChange}
+          style={{
+            width: "100%",
+            height: "80px",
+            padding: "10px",
+            border: "1px solid #dcdde1",
+            borderRadius: "8px",
+            boxSizing: "border-box",
+          }}
+          placeholder="備考を入力（任意）"
+        />
+      ),
+    },
+    {
+      label: "ファイルを選択",
+      value: (
+        <input
+          type="file"
+          name="file"
+          ref={fileInputRef}
+          onChange={handleChange}
+          accept=".pdf, .jpg, .jpeg, .png"
+          required
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="content-wrapper">
       <PageHeader title="関連資料一覧" />
 
-      {/* 対象顧客表示 */}
       <div style={{ marginBottom: "25px" }}>
         <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
           対象顧客：
@@ -142,7 +183,6 @@ export default function ClientDocuments() {
         </Link>
       </div>
 
-      {/* ★ 共通化した AlertMessage コンポーネントを使用（自動消去） */}
       <AlertMessage
         message={successMessage}
         type="success"
@@ -150,74 +190,10 @@ export default function ClientDocuments() {
         onClose={() => setSuccessMessage("")}
       />
 
-      {/* 資料登録フォーム */}
       <div className="card">
         <h3>資料登録</h3>
         <form onSubmit={handleSubmit}>
-          <dl className="detail-list">
-            <div className="detail-item">
-              <dt>資料名</dt>
-              <dd>
-                <input
-                  type="text"
-                  name="docTitle"
-                  value={formData.docTitle}
-                  onChange={handleChange}
-                  required
-                  style={{ width: "100%", boxSizing: "border-box" }}
-                  placeholder="資料名を入力"
-                />
-              </dd>
-            </div>
-            <div className="detail-item">
-              <dt>分類</dt>
-              <dd>
-                <select
-                  name="docType"
-                  value={formData.docType}
-                  onChange={handleChange}
-                  style={{ width: "100%" }}
-                >
-                  <option value="機器一覧表">機器一覧表</option>
-                  <option value="機器配置図">機器配置図</option>
-                  <option value="画像">画像</option>
-                  <option value="その他">その他</option>
-                </select>
-              </dd>
-            </div>
-            <div className="detail-item">
-              <dt>備考</dt>
-              <dd>
-                <textarea
-                  name="docRemarks"
-                  value={formData.docRemarks}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    height: "80px",
-                    padding: "10px",
-                    border: "1px solid #dcdde1",
-                    borderRadius: "8px",
-                    boxSizing: "border-box",
-                  }}
-                  placeholder="備考を入力（任意）"
-                />
-              </dd>
-            </div>
-            <div className="detail-item">
-              <dt>ファイルを選択</dt>
-              <dd>
-                <input
-                  type="file"
-                  name="file"
-                  ref={fileInputRef}
-                  onChange={handleChange}
-                  accept=".pdf, .jpg, .jpeg, .png"
-                  required
-                />
-              </dd>
-            </div>
-          </dl>
+          <DetailList items={formItems} />
 
           <div className="action-buttons">
             <Button type="submit" variant="primary">
@@ -230,7 +206,6 @@ export default function ClientDocuments() {
         </form>
       </div>
 
-      {/* 資料情報一覧 */}
       <div className="card">
         <h3>資料情報</h3>
         {documents.length > 0 ? (

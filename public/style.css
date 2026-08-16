@@ -686,7 +686,7 @@ textarea.field-error {
 }
 
 
-
+/*
 /* --- テーマ：発注業者用 (緑ベース) のボタン色調整 --- */
 .theme-contractee {
 	--side-bg: rgb(0, 64, 64);
@@ -695,7 +695,7 @@ textarea.field-error {
 
 /* 「詳細」ボタンなどの .btn-primary に対する上書き */
 .theme-contractee .btn-primary {
-	background-color: 2ecc71;
+	background-color: #2ecc71;
 	/* 濃い緑で強制指定 */
 }
 

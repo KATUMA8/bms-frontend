@@ -1,146 +1,39 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
-import FieldError from "../../components/FieldError";
-import FormAlert from "../../components/FormAlert";
-import { FORM_LABELS } from "../../utils/formLabels";
-import { VALIDATION_MESSAGES } from "../../utils/validationMessages";
-import Button from "../../atoms/Button";
-import PageHeader from "../../components/PageHeader";
-import { projectApi } from "../../api/projectApi";
+// src/components/BaseProjectForm.jsx
+import FieldError from "./FieldError";
+import FormAlert from "./FormAlert";
+import Button from "../atoms/Button";
+import PageHeader from "./PageHeader";
 
-export default function ProjectEdit() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const labels = FORM_LABELS.project;
-
-  const [projectForm, setProjectForm] = useState({
-    projectId: id,
-    projectName: "",
-    clientId: "",
-    companyId: "",
-    projectStaffname: "",
-    contractType: "",
-    status: "",
-    projectRemarks: "",
-  });
-
-  const [clients, setClients] = useState([]);
-  const [companies, setCompanies] = useState([]);
-
-  const [errors, setErrors] = useState({});
-  const [hasError, setHasError] = useState(false);
-  const [serverError, setServerError] = useState("");
-
-  useEffect(() => {
-    projectApi.getEditData(id)
-      .then((data) => {
-        if (data.project) {
-          setProjectForm(data.project);
-        } else {
-          setProjectForm(data);
-        }
-        if (data.clients) setClients(data.clients);
-        if (data.companies) setCompanies(data.companies);
-      })
-      .catch((err) => {
-        console.error("データ取得エラー:", err);
-        setServerError("案件情報の取得に失敗しました。");
-        setHasError(true);
-      });
-  }, [id]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProjectForm({
-      ...projectForm,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const newErrors = {};
-
-    if (!projectForm.projectName.trim()) {
-      newErrors.projectName = VALIDATION_MESSAGES.required(labels.projectName);
-    }
-    if (!projectForm.clientId) {
-      newErrors.clientId = VALIDATION_MESSAGES.required(labels.clientId);
-    }
-    if (!projectForm.companyId) {
-      newErrors.companyId = VALIDATION_MESSAGES.required(labels.companyId);
-    }
-    if (!projectForm.projectStaffname.trim()) {
-      newErrors.projectStaffname = VALIDATION_MESSAGES.required(
-        labels.projectStaffname,
-      );
-    }
-    if (!projectForm.contractType) {
-      newErrors.contractType = VALIDATION_MESSAGES.required(
-        labels.contractType,
-      );
-    }
-    if (!projectForm.status) {
-      newErrors.status = VALIDATION_MESSAGES.required(labels.status);
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setHasError(true);
-      return;
-    }
-
-    setHasError(false);
-    setErrors({});
-    setServerError("");
-
-    projectApi.update(id, projectForm)
-      .then(() => {
-        navigate(`/projects/${id}`, {
-          state: { message: "案件情報を更新しました。" },
-        });
-      })
-      .catch((err) => {
-        if (err.response && err.response.status === 400) {
-          const errorData = err.response.data;
-          if (Array.isArray(errorData)) {
-            const errorMap = {};
-            errorData.forEach((error) => {
-              errorMap[error.field] = error.defaultMessage;
-            });
-            setErrors(errorMap);
-            setHasError(true);
-          } else {
-            setServerError("入力内容にエラーがあります。");
-            setHasError(true);
-          }
-        } else {
-          console.error("更新エラー:", err);
-          setServerError("更新処理に失敗しました。");
-          setHasError(true);
-        }
-      });
-  };
-
+export default function BaseProjectForm({
+  title,
+  projectForm,
+  clients,
+  companies,
+  errors,
+  hasError,
+  serverError,
+  labels,
+  onChange,
+  onSubmit,
+  isEdit = false,
+  cancelTo,
+}) {
   return (
     <div className="content-wrapper">
-      <PageHeader title="案件情報編集" />
+      <PageHeader title={title} />
 
       <div className="card">
-        <form onSubmit={handleSubmit} className="edit-form">
+        <form onSubmit={onSubmit} className={isEdit ? "edit-form" : ""}>
           <FormAlert hasError={hasError} />
 
           {serverError && (
-            <div
-              className="alert alert-danger"
-              style={{ marginBottom: "15px" }}
-            >
+            <div className="alert alert-danger" style={{ marginBottom: "15px" }}>
               <p>{serverError}</p>
             </div>
           )}
 
           <div className="form-vertical-layout">
+            {/* 案件名 */}
             <div className="form-group-block">
               <label>
                 {labels.projectName} <span className="required">(必須)</span>
@@ -149,13 +42,14 @@ export default function ProjectEdit() {
                 type="text"
                 name="projectName"
                 value={projectForm.projectName || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 placeholder="案件名を入力"
                 className={errors.projectName ? "field-error" : ""}
               />
               <FieldError message={errors.projectName} />
             </div>
 
+            {/* 顧客選択 */}
             <div className="form-group-block">
               <label>
                 {labels.clientId} <span className="required">(必須)</span>
@@ -163,7 +57,7 @@ export default function ProjectEdit() {
               <select
                 name="clientId"
                 value={projectForm.clientId || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 className={errors.clientId ? "field-error" : ""}
               >
                 <option value="">顧客を選択してください</option>
@@ -176,6 +70,7 @@ export default function ProjectEdit() {
               <FieldError message={errors.clientId} />
             </div>
 
+            {/* 発注業者選択 */}
             <div className="form-group-block">
               <label>
                 {labels.companyId} <span className="required">(必須)</span>
@@ -183,7 +78,7 @@ export default function ProjectEdit() {
               <select
                 name="companyId"
                 value={projectForm.companyId || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 className={errors.companyId ? "field-error" : ""}
               >
                 <option value="">発注業者を選択してください</option>
@@ -196,22 +91,23 @@ export default function ProjectEdit() {
               <FieldError message={errors.companyId} />
             </div>
 
+            {/* 担当者名 */}
             <div className="form-group-block">
               <label>
-                {labels.projectStaffname}{" "}
-                <span className="required">(必須)</span>
+                {labels.projectStaffname} <span className="required">(必須)</span>
               </label>
               <input
                 type="text"
                 name="projectStaffname"
                 value={projectForm.projectStaffname || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 placeholder="担当者名を入力"
                 className={errors.projectStaffname ? "field-error" : ""}
               />
               <FieldError message={errors.projectStaffname} />
             </div>
 
+            {/* 契約種別 */}
             <div className="form-group-block">
               <label>
                 {labels.contractType} <span className="required">(必須)</span>
@@ -219,7 +115,7 @@ export default function ProjectEdit() {
               <select
                 name="contractType"
                 value={projectForm.contractType || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 className={errors.contractType ? "field-error" : ""}
               >
                 <option value="">契約種別を選択してください</option>
@@ -229,6 +125,7 @@ export default function ProjectEdit() {
               <FieldError message={errors.contractType} />
             </div>
 
+            {/* 案件状態 */}
             <div className="form-group-block">
               <label>
                 {labels.status} <span className="required">(必須)</span>
@@ -236,7 +133,7 @@ export default function ProjectEdit() {
               <select
                 name="status"
                 value={projectForm.status || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 className={errors.status ? "field-error" : ""}
               >
                 <option value="">案件状態を選択してください</option>
@@ -247,12 +144,13 @@ export default function ProjectEdit() {
               <FieldError message={errors.status} />
             </div>
 
+            {/* 特記事項 */}
             <div className="form-group-block">
               <label>{labels.projectRemarks}</label>
               <textarea
                 name="projectRemarks"
                 value={projectForm.projectRemarks || ""}
-                onChange={handleChange}
+                onChange={onChange}
                 placeholder="特記事項を入力"
                 rows="4"
                 className={errors.projectRemarks ? "field-error" : ""}
@@ -260,12 +158,13 @@ export default function ProjectEdit() {
               <FieldError message={errors.projectRemarks} />
             </div>
 
-            <div className="action-buttons-form">
+            {/* ボタン */}
+            <div className={isEdit ? "action-buttons-form" : "action-buttons"}>
               <Button type="submit" variant="primary">
-                更新する
+                {isEdit ? "更新する" : "登録する"}
               </Button>
-              <Button to={`/projects/${id}`} variant="cancel">
-                戻る
+              <Button to={cancelTo} variant="cancel">
+                {isEdit ? "戻る" : "戻る"}
               </Button>
             </div>
           </div>

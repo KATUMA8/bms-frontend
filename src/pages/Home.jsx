@@ -10,19 +10,19 @@ import { projectApi } from "../api/projectApi";
 import { axiosInstance } from "../api/axiosInstance";
 
 export default function Home() {
-  const loginUser = useAtomValue(loginUserAtom) || {
-    userId: 2,
-    name: "鈴木一郎",
-    roleFlag: 2, // あるいは発注業者としての判定値
-    companyId: 1
-  };
-
-  //  const loginUser = useAtomValue(loginUserAtom) || {
-  //   userId: 1,
-  //   name: "受注者",
-  //   roleFlag: 1, // あるいは発注業者としての判定値
-  //   companyId: null
+  // const loginUser = useAtomValue(loginUserAtom) || {
+  //   userId: 2,
+  //   name: "鈴木一郎",
+  //   roleFlag: 2, // あるいは発注業者としての判定値
+  //   companyId: 1
   // };
+
+   const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 1,
+    name: "受注者",
+    roleFlag: 1, // あるいは発注業者としての判定値
+    companyId: null
+  };
 
 const isAdmin = loginUser?.roleFlag === 1; // 管理者かどうかの判定
 

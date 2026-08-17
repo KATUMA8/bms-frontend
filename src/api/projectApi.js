@@ -2,16 +2,18 @@ import { axiosInstance } from "./axiosInstance";
 
 export const projectApi = {
   // ダッシュボード（Home）用データ取得
-  getHomeData: async (qPage = 1, pPage = 1) => {
-    const response = await axiosInstance.get("/home", {
+  getHomeData: async (qPage = 1, pPage = 1, isAdmin = true) => {
+    const prefix = isAdmin ? "" : "/contractee";
+    const response = await axiosInstance.get(`${prefix}/home`, {
       params: { qPage, pPage },
     });
     return response.data;
   },
 
-  // 案件一覧取得
-  getList: async (page = 1) => {
-    const response = await axiosInstance.get("/projects", { params: { page } });
+  // 案件一覧取得（isAdmin に応じてパスを切り替える）
+  getList: async (page = 1, isAdmin = true) => {
+    const prefix = isAdmin ? "" : "/contractee";
+    const response = await axiosInstance.get(`${prefix}/projects`, { params: { page } });
     return response.data;
   },
 
@@ -28,8 +30,9 @@ export const projectApi = {
   },
 
   // 案件詳細取得
-  getDetail: async (id) => {
-    const response = await axiosInstance.get(`/projects/${id}`);
+  getDetail: async (id, isAdmin = true) => {
+    const prefix = isAdmin ? "" : "/contractee";
+    const response = await axiosInstance.get(`${prefix}/projects/${id}`);
     return response.data;
   },
 
@@ -70,6 +73,15 @@ export const projectApi = {
     const response = await axiosInstance.post(`/projects/${pid}/quotes/edit/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return response.data;
+  },
+
+  // 見積判定用API
+  judgeQuote: async (projectId, quoteId, status) => {
+    const response = await axiosInstance.post(
+      `/contractee/projects/${projectId}/quotes/judge/${quoteId}`,
+      { status: status } // JSONボディとして送信する
+    );
     return response.data;
   },
 };

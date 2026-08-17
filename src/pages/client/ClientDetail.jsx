@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "react-router";
+import { useAtomValue } from "jotai";
 import { formatPhone, formatPostal } from "../../utils/formatUtils";
 import AlertMessage from "../../components/AlertMessage";
 import { clientApi } from "../../api/clientApi";
@@ -11,10 +12,20 @@ import Pagination from "../../components/Pagination";
 import DetailList from "../../components/DetailList";
 import DataTable from "../../components/DataTable";
 import { useDeleteHandler } from "../../hooks/useDeleteHandler";
+import loginUserAtom from "../../atoms/loginUserAtom";
 
 export default function ClientDetail() {
   const { id } = useParams();
   const location = useLocation();
+
+  const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 2,
+    name: "鈴木一郎",
+    roleFlag: 2,
+    companyId: 1,
+  };
+
+  const isAdmin = loginUser?.roleFlag === 1;
 
   const [client, setClient] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -28,11 +39,11 @@ export default function ClientDetail() {
   const { handleDelete } = useDeleteHandler(
     `/clients/${id}`,
     "/clients",
-    "顧客情報を削除しました。"
+    "顧客情報を削除しました。",
   );
 
   useEffect(() => {
-    clientApi.getDetail(id, currentPage)
+    clientApi.getDetail(id, currentPage, isAdmin)
       .then((res) => {
         setClient(res.client);
         setProjects(res.projects || []);
@@ -41,7 +52,7 @@ export default function ClientDetail() {
       .catch((error) => {
         console.error("データ取得エラー:", error);
       });
-  }, [id, currentPage]);
+  }, [isAdmin, id, currentPage]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -60,9 +71,7 @@ export default function ClientDetail() {
     {
       label: "関連資料",
       value: (
-        <Link to={`/clients/${client.clientId}/documents`}>
-          資料一覧へ
-        </Link>
+        <Link to={`/clients/${client.clientId}/documents`}>資料一覧へ</Link>
       ),
     },
   ];
@@ -81,7 +90,7 @@ export default function ClientDetail() {
   ];
 
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="顧客詳細" />
 
       <AlertMessage
@@ -96,12 +105,20 @@ export default function ClientDetail() {
         <DetailList items={detailItems} />
 
         <div className="action-buttons-form">
-          <Button to={`/clients/edit/${client.clientId}`} variant="primary">
-            編集
-          </Button>
-          <Button type="button" variant="danger" onClick={() => handleDelete()}>
-            削除
-          </Button>
+          {isAdmin && (
+            <>
+              <Button to={`/clients/edit/${client.clientId}`} variant="primary">
+                編集
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => handleDelete()}
+              >
+                削除
+              </Button>
+            </>
+          )}
           <Button to="/clients" variant="cancel">
             顧客一覧へ戻る
           </Button>

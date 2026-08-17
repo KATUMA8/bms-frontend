@@ -1,15 +1,33 @@
 import { useState, useEffect } from "react";
+import { useAtomValue } from "jotai";
+import { useLocation } from "react-router";
 import Pagination from "../../components/Pagination";
 import KanaFilter from "../../components/KanaFilter";
 import AlertMessage from "../../components/AlertMessage";
-import { useLocation } from "react-router";
 import { clientApi } from "../../api/clientApi";
 import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import NoDataMessage from "../../components/NoDataMessage";
 import DataTable from "../../components/DataTable";
+import loginUserAtom from "../../atoms/loginUserAtom";
 
 export default function ClientList() {
+  const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 2,
+    name: "鈴木一郎",
+    roleFlag: 2,
+    companyId: 1
+  };
+
+  //  const loginUser = useAtomValue(loginUserAtom) || {
+  //   userId: 1,
+  //   name: "受注者",
+  //   roleFlag: 1, // あるいは発注業者としての判定値
+  //   companyId: null
+  // };
+
+  const isAdmin = loginUser?.roleFlag === 1;
+
   const [clients, setClients] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -21,7 +39,8 @@ export default function ClientList() {
   );
 
   useEffect(() => {
-    clientApi.getList(currentPage, currentKana)
+    // API側でルーティングがカプセル化されたため、スッキリ呼び出せる
+    clientApi.getList(currentPage, currentKana, isAdmin)
       .then((res) => {
         setClients(res.clients);
         setTotalPages(res.totalPages);
@@ -29,16 +48,7 @@ export default function ClientList() {
       .catch((error) => {
         console.error("通信エラー:", error);
       });
-  }, [currentPage, currentKana]);
-
-  const handleSelectKana = (kana) => {
-    setCurrentKana(kana);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
+  }, [isAdmin, currentPage, currentKana]);
 
   const columns = [
     { label: "顧客名", key: "clientName" },
@@ -56,7 +66,7 @@ export default function ClientList() {
   ];
 
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="顧客管理" />
 
       <AlertMessage
@@ -66,16 +76,17 @@ export default function ClientList() {
         onClose={() => setSuccessMessage("")}
       />
 
-      <div className="action-bar">
-        <Button to="/clients/add" variant="primary">
-          新規顧客登録
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="action-bar">
+          <Button to="/clients/add" variant="primary">
+            新規顧客登録
+          </Button>
+        </div>
+      )}
 
       <div className="card">
         <h3>顧客一覧</h3>
-
-        <KanaFilter currentKana={currentKana} onSelectKana={handleSelectKana} />
+        <KanaFilter currentKana={currentKana} onSelectKana={(k) => { setCurrentKana(k); setCurrentPage(1); }} />
 
         {clients && clients.length > 0 ? (
           <DataTable columns={columns} data={clients} />
@@ -86,7 +97,7 @@ export default function ClientList() {
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={handlePageChange}
+          onPageChange={setCurrentPage}
         />
       </div>
     </div>

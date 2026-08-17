@@ -9,10 +9,21 @@ import DataTable from "../../components/DataTable";
 import { getRemainingDaysText } from "../../utils/dateUtils";
 import { useDeleteHandler } from "../../hooks/useDeleteHandler";
 import { projectApi } from "../../api/projectApi";
+import { useAtomValue } from "jotai";
+import loginUserAtom from "../../atoms/loginUserAtom";
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const location = useLocation();
+
+  const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 2,
+    name: "鈴木一郎",
+    roleFlag: 2,
+    companyId: 1
+  };
+
+  const isAdmin = loginUser.roleFlag === 1;
 
   const [projectData, setProjectData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,6 +31,7 @@ export default function ProjectDetail() {
   const [successMessage, setSuccessMessage] = useState(
     location.state?.message || "",
   );
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [quoteFile, setQuoteFile] = useState(null);
   const [deadlineDate, setDeadlineDate] = useState("");
@@ -33,7 +45,9 @@ export default function ProjectDetail() {
   );
 
   const fetchProjectDetail = () => {
-    projectApi.getDetail(id)
+    setLoading(true);
+    // API側でロールに応じた詳細取得パスを切り替え
+    projectApi.getDetail(id, isAdmin)
       .then((data) => {
         setProjectData(data);
       })
@@ -48,7 +62,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     fetchProjectDetail();
-  }, [id]);
+  }, [id, isAdmin]);
 
   const handleQuoteSubmit = (e) => {
     e.preventDefault();
@@ -84,6 +98,22 @@ export default function ProjectDetail() {
     }
   };
 
+  // 【発注業者用】見積判定
+  const handleJudge = (quoteId, status) => {
+    if (!window.confirm(`この見積を「${status}」にしますか？`)) return;
+
+    projectApi.judgeQuote(id, quoteId, status)
+      .then((res) => {
+        setSuccessMessage(res.successMessage || "見積ステータスを更新しました。");
+        setErrorMessage("");
+        fetchProjectDetail();
+      })
+      .catch((error) => {
+        console.error("判定エラー:", error);
+        setErrorMessage(error.response?.data?.errorMessage || "判定処理に失敗しました。");
+      });
+  };
+
   if (loading || !projectData) {
     return <Loading />;
   }
@@ -100,13 +130,11 @@ export default function ProjectDetail() {
     {
       label: "顧客名",
       value: (
-        <Link to={`/clients/${project.clientId}`}>
-          {project.clientName}
-        </Link>
+        <Link to={`/clients/${project.clientId}`}>{project.clientName}</Link>
       ),
     },
     { label: "案件名", value: project.projectName },
-    { label: "発注業者", value: project.companyName },
+    { label: isAdmin ? "発注業者" : "担当業者", value: project.companyName },
     { label: "契約種別", value: project.contractType },
     { label: "担当者名", value: project.projectStaffname },
     { label: "案件状態", value: project.status },
@@ -133,8 +161,15 @@ export default function ProjectDetail() {
     {
       label: "判定期限",
       value: (
-        <span className={isExpired ? "text-danger" : ""}>
-          {getRemainingDaysText(latestQuote.deadlineDate, today)}
+        <span>
+          <span className={isExpired ? "text-danger" : ""}>
+            {latestQuote.deadlineDate ? latestQuote.deadlineDate : "期限設定なし"}
+          </span>
+          {isExpired && (
+            <span className="text-danger" style={{ marginLeft: "5px" }}>
+              (期限切れ)
+            </span>
+          )}
         </span>
       ),
     },
@@ -160,7 +195,7 @@ export default function ProjectDetail() {
   ];
 
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="案件詳細" />
 
       <AlertMessage
@@ -170,20 +205,34 @@ export default function ProjectDetail() {
         onClose={() => setSuccessMessage("")}
       />
 
+      {errorMessage && (
+        <div className="alert alert-danger" style={{ marginBottom: "20px", color: "red" }}>
+          {errorMessage}
+        </div>
+      )}
+
       <div className="card">
         <h3>案件情報</h3>
         <DetailList items={projectDetailItems} />
 
-        <div className="action-buttons-form">
-          <Button to={`/projects/edit/${project.projectId}`} variant="primary">
-            案件を編集
-          </Button>
-          <Button type="button" variant="danger" onClick={() => handleDelete()}>
-            案件を削除
-          </Button>
-          <Button to="/projects" variant="cancel">
-            案件一覧へ戻る
-          </Button>
+        <div className="action-buttons-form" style={{ marginTop: "20px" }}>
+          {isAdmin ? (
+            <>
+              <Button to={`/projects/edit/${project.projectId}`} variant="primary">
+                案件を編集
+              </Button>
+              <Button type="button" variant="danger" onClick={() => handleDelete()}>
+                案件を削除
+              </Button>
+              <Button to="/projects" variant="cancel">
+                案件一覧へ戻る
+              </Button>
+            </>
+          ) : (
+            <Button to="/projects" className="btn" variant="cancel">
+              案件一覧へ戻る
+            </Button>
+          )}
         </div>
       </div>
 
@@ -196,82 +245,111 @@ export default function ProjectDetail() {
               <DetailList items={latestQuoteDetailItems} />
             </div>
 
-            <div
-              className="action-buttons quote-action-buttons"
-              style={{ marginBottom: "20px" }}
-            >
-              <Button
-                to={`/projects/${project.projectId}/quotes/edit/${latestQuote.quoteId}`}
-                variant="secondary"
+            {isAdmin ? (
+              <div
+                className="action-buttons quote-action-buttons"
+                style={{ marginBottom: "20px" }}
               >
-                見積を編集
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={() => handleQuoteDelete(latestQuote.quoteId)}
-              >
-                見積を削除
-              </Button>
-            </div>
+                <Button
+                  to={`/projects/${project.projectId}/quotes/edit/${latestQuote.quoteId}`}
+                  variant="secondary"
+                >
+                  見積を編集
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={() => handleQuoteDelete(latestQuote.quoteId)}
+                >
+                  見積を削除
+                </Button>
+              </div>
+            ) : (
+              <div style={{ marginBottom: "20px" }}>
+                {latestQuote.quoteStatus === "未判定" && !isExpired ? (
+                  <>
+                    <p style={{ marginBottom: "10px" }}>この見積を判定する</p>
+                    <div className="action-buttons quote-action-buttons" style={{ display: "flex", gap: "10px" }}>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={() => handleJudge(latestQuote.quoteId, "発注")}
+                      >
+                        発注
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleJudge(latestQuote.quoteId, "失注")}
+                      >
+                        失注
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onClick={() => handleJudge(latestQuote.quoteId, "差戻し")}
+                      >
+                        差戻し
+                      </Button>
+                    </div>
+                  </>
+                ) : latestQuote.quoteStatus === "未判定" && isExpired ? (
+                  <p className="text-danger">※有効期限が過ぎているため、判定はできません。</p>
+                ) : null}
+              </div>
+            )}
           </>
         ) : (
           <div className="add-quote-area" style={{ marginBottom: "20px" }}>
-            <p className="no-quote-msg">
+            <p className="no-quote-msg" style={{ color: "#636e72" }}>
               現在、登録されている見積はありません。
             </p>
 
-            <form onSubmit={handleQuoteSubmit}>
-              <div
-                className="form-group-block"
-                style={{ marginBottom: "15px" }}
-              >
-                <label>見積PDFファイルを選択</label>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  required
-                  onChange={(e) => setQuoteFile(e.target.files[0])}
-                />
-              </div>
+            {isAdmin && (
+              <form onSubmit={handleQuoteSubmit}>
+                <div
+                  className="form-group-block"
+                  style={{ marginBottom: "15px" }}
+                >
+                  <label>見積PDFファイルを選択</label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    required
+                    onChange={(e) => setQuoteFile(e.target.files[0])}
+                  />
+                </div>
 
-              <div
-                className="form-group-block"
-                style={{ marginBottom: "15px" }}
-              >
-                <label>判定期限</label>
-                <input
-                  type="date"
-                  value={deadlineDate}
-                  onChange={(e) => setDeadlineDate(e.target.value)}
-                  required
-                />
-              </div>
+                <div
+                  className="form-group-block"
+                  style={{ marginBottom: "15px" }}
+                >
+                  <label>判定期限</label>
+                  <input
+                    type="date"
+                    value={deadlineDate}
+                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    required
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                variant="primary"
-                className="btn-submit-quote"
-              >
-                登録する
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="btn-submit-quote"
+                >
+                  登録する
+                </Button>
+              </form>
+            )}
           </div>
         )}
 
-        {historyList.length > 0 ? (
-          <DataTable columns={historyColumns} data={historyList} />
-        ) : (
-          <table className="data-table">
-            <tbody>
-              <tr>
-                <td style={{ textAlign: "center" }}>
-                  履歴はありません。
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          columns={historyColumns}
+          data={historyList}
+          noDataMessage="履歴はありません。"
+        />
       </div>
     </div>
   );

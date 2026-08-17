@@ -7,6 +7,8 @@ import Pagination from "../../components/Pagination";
 import AlertMessage from "../../components/AlertMessage";
 import DataTable from "../../components/DataTable";
 import { useLocation } from "react-router";
+import { useAtomValue } from "jotai";
+import loginUserAtom from "../../atoms/loginUserAtom";
 import { projectApi } from "../../api/projectApi";
 
 export default function ProjectList() {
@@ -15,9 +17,24 @@ export default function ProjectList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 2,
+    name: "鈴木一郎",
+    roleFlag: 2,
+    companyId: 1
+  };
+
+  //  const loginUser = useAtomValue(loginUserAtom) || {
+  //   userId: 1,
+  //   name: "受注者",
+  //   roleFlag: 1, // あるいは発注業者としての判定値
+  //   companyId: null
+  // };
+  const isAdmin = loginUser?.roleFlag === 1;
+
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState(
-    location.state?.message || "",
+    location.state?.message || ""
   );
 
   const today = new Date().toISOString().split("T")[0];
@@ -26,7 +43,8 @@ export default function ProjectList() {
     const fetchProjects = async () => {
       setLoading(true);
       try {
-        const data = await projectApi.getList(currentPage);
+        // API側でルーティングがカプセル化されたためすっきりと呼び出せる
+        const data = await projectApi.getList(currentPage, isAdmin);
         setProjects(data.projects || []);
         setTotalPages(data.totalPages || 1);
       } catch (error) {
@@ -36,7 +54,7 @@ export default function ProjectList() {
       }
     };
     fetchProjects();
-  }, [currentPage]);
+  }, [isAdmin, currentPage]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -45,7 +63,7 @@ export default function ProjectList() {
   const columns = [
     { label: "顧客名", key: "clientName" },
     { label: "案件名", key: "projectName" },
-    { label: "発注業者", key: "companyName" },
+    ...(isAdmin ? [{ label: "発注業者", key: "companyName" }] : []),
     { label: "案件状態", key: "status" },
     {
       label: "見積状態",
@@ -74,7 +92,7 @@ export default function ProjectList() {
   if (loading) return <Loading />;
 
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="案件管理" />
 
       <AlertMessage
@@ -84,11 +102,13 @@ export default function ProjectList() {
         onClose={() => setSuccessMessage("")}
       />
 
-      <div className="action-bar">
-        <Button to="/projects/add" variant="primary">
-          新規案件登録
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="action-bar">
+          <Button to="/projects/add" variant="primary">
+            新規案件登録
+          </Button>
+        </div>
+      )}
 
       <div className="card">
         <h3>案件一覧</h3>

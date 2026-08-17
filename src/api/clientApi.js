@@ -2,10 +2,13 @@ import { axiosInstance } from "./axiosInstance";
 
 export const clientApi = {
   // 顧客一覧の取得（ページネーション・カナ絞り込み）[cite: 15]
-  getList: async (page = 1, kana = "") => {
-    const response = await axiosInstance.get("/clients", {
-      params: { page, kana },
-    });
+  getList: async (page = 1, kana = "", isAdmin = true) => {
+    const prefix = isAdmin ? "" : "/contractee";
+    const params = { page };
+    if (kana) {
+      params.kana = kana;
+    }
+    const response = await axiosInstance.get(`${prefix}/clients`, { params });
     return response.data;
   },
 
@@ -16,16 +19,18 @@ export const clientApi = {
   },
 
   // 顧客詳細の取得（案件一覧のページネーション）[cite: 15]
-  getDetail: async (clientId, page = 1) => {
-    const response = await axiosInstance.get(`/clients/${clientId}`, {
+  getDetail: async (clientId, page = 1, isAdmin = true) => {
+    const prefix = isAdmin ? "" : "/contractee";
+    const response = await axiosInstance.get(`${prefix}/clients/${clientId}`, {
       params: { page },
     });
     return response.data;
   },
 
   // 顧客の関連資料一覧取得[cite: 15]
-  getDocuments: async (clientId) => {
-    const response = await axiosInstance.get(`/clients/${clientId}/documents`);
+  getDocuments: async (clientId, isAdmin = true) => {
+    const prefix = isAdmin ? "" : "/contractee";
+    const response = await axiosInstance.get(`${prefix}/clients/${clientId}/documents`);
     return response.data;
   },
 

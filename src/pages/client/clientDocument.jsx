@@ -1,18 +1,30 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router";
+import { useAtomValue } from "jotai";
 import AlertMessage from "../../components/AlertMessage";
 import { clientApi } from "../../api/clientApi";
 import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import Loading from "../../components/Loading";
 import DetailList from "../../components/DetailList";
+import loginUserAtom from "../../atoms/loginUserAtom";
 
 export default function ClientDocuments() {
   const { id } = useParams();
-  const fileInputRef = useRef(null);
+
+  const loginUser = useAtomValue(loginUserAtom) || {
+    userId: 2,
+    name: "鈴木一郎",
+    roleFlag: 2,
+    companyId: 1
+  };
+
+  const isAdmin = loginUser?.roleFlag === 1;
 
   const [client, setClient] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [successMessage, setSuccessMessage] = useState("");
+
   const [formData, setFormData] = useState({
     docTitle: "",
     docType: "機器一覧表",
@@ -20,10 +32,8 @@ export default function ClientDocuments() {
     file: null,
   });
 
-  const [successMessage, setSuccessMessage] = useState("");
-
   useEffect(() => {
-    clientApi.getDocuments(id)
+    clientApi.getDocuments(id, isAdmin)
       .then((res) => {
         setClient(res.client);
         setDocuments(res.documents || []);
@@ -31,7 +41,7 @@ export default function ClientDocuments() {
       .catch((error) => {
         console.error("データ取得エラー:", error);
       });
-  }, [id]);
+  }, [isAdmin, id]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -59,16 +69,13 @@ export default function ClientDocuments() {
     clientApi.addDocument(id, data)
       .then((res) => {
         setSuccessMessage(res.message);
-        setFormData((prev) => ({
-          ...prev,
+        setFormData({
+          docTitle: "",
+          docType: "機器一覧表",
+          docRemarks: "",
           file: null,
-        }));
-
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-
-        return clientApi.getDocuments(id);
+        });
+        return clientApi.getDocuments(id, isAdmin);
       })
       .then((res) => {
         if (res) {
@@ -153,7 +160,6 @@ export default function ClientDocuments() {
         <input
           type="file"
           name="file"
-          ref={fileInputRef}
           onChange={handleChange}
           accept=".pdf, .jpg, .jpeg, .png"
           required
@@ -163,7 +169,7 @@ export default function ClientDocuments() {
   ];
 
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="関連資料一覧" />
 
       <div style={{ marginBottom: "25px" }}>
@@ -190,21 +196,23 @@ export default function ClientDocuments() {
         onClose={() => setSuccessMessage("")}
       />
 
-      <div className="card">
-        <h3>資料登録</h3>
-        <form onSubmit={handleSubmit}>
-          <DetailList items={formItems} />
+      {isAdmin && (
+        <div className="card">
+          <h3>資料登録</h3>
+          <form onSubmit={handleSubmit}>
+            <DetailList items={formItems} />
 
-          <div className="action-buttons">
-            <Button type="submit" variant="primary">
-              登録する
-            </Button>
-            <Button to={`/clients/${client.clientId}`} variant="cancel">
-              顧客詳細へ戻る
-            </Button>
-          </div>
-        </form>
-      </div>
+            <div className="action-buttons">
+              <Button type="submit" variant="primary">
+                登録する
+              </Button>
+              <Button to={`/clients/${client.clientId}`} variant="cancel">
+                顧客詳細へ戻る
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="card">
         <h3>資料情報</h3>
@@ -256,16 +264,18 @@ export default function ClientDocuments() {
                     )}
                   </div>
 
-                  <div style={{ marginTop: "auto", paddingTop: "15px" }}>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      onClick={() => handleDelete(doc.docId)}
-                      className="btn-text-danger"
-                    >
-                      削除
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div style={{ marginTop: "auto", paddingTop: "15px" }}>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onClick={() => handleDelete(doc.docId)}
+                        className="btn-text-danger"
+                      >
+                        削除
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -274,6 +284,14 @@ export default function ClientDocuments() {
           <p style={{ textAlign: "center", padding: "20px" }}>
             登録されている資料はありません。
           </p>
+        )}
+
+        {!isAdmin && (
+          <div className="action-buttons" style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+            <Button to={`/clients/${client.clientId}`} variant="cancel">
+              顧客詳細へ戻る
+            </Button>
+          </div>
         )}
       </div>
     </div>

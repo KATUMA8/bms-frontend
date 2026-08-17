@@ -11,6 +11,7 @@ import FormInput from "./FormInput";
 import { VALIDATION_MESSAGES } from "../utils/validationMessages";
 import Button from "../atoms/Button";
 import PageHeader from "./PageHeader";
+import { axiosInstance } from "../api/axiosInstance";
 
 export default function BaseEntityForm({
   title,
@@ -67,7 +68,7 @@ export default function BaseEntityForm({
   useEffect(() => {
     if (isEdit && id) {
       const fetchUrl = apiEndpoint.replace(/\/?$/, `/edit/${id}`);
-      axios
+      axiosInstance
         .get(fetchUrl)
         .then((res) => {
           const fetchedData = res.data;
@@ -164,8 +165,8 @@ export default function BaseEntityForm({
       ? apiEndpoint.replace(/\/?$/, `/edit/${id}`)
       : apiEndpoint;
 
-    axios
-      .post(url, submitData)
+    axiosInstance
+  .post(url, submitData)
       .then((res) => {
         const targetId = isEdit ? id : res.data[idKey];
         const basePath = apiEndpoint.includes("clients")

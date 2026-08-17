@@ -7,18 +7,12 @@ import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import Loading from "../../components/Loading";
 import DetailList from "../../components/DetailList";
-import loginUserAtom from "../../atoms/loginUserAtom";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ClientDocuments() {
   const { id } = useParams();
 
-  const loginUser = useAtomValue(loginUserAtom) || {
-    userId: 2,
-    name: "鈴木一郎",
-    roleFlag: 2,
-    companyId: 1
-  };
-
+const loginUser = useAtomValue(loginUserAtom);
   const isAdmin = loginUser?.roleFlag === 1;
 
   const [client, setClient] = useState(null);

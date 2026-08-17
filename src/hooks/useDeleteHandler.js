@@ -1,11 +1,11 @@
-import axios from "axios";
 import { useNavigate } from "react-router";
+import { axiosInstance } from "../api/axiosInstance";
 
 export function useDeleteHandler(deleteUrl, redirectUrl, successMessage) {
   const navigate = useNavigate();
   const handleDelete = (confirmMessage = "本当に削除しますか？") => {
     if (window.confirm(confirmMessage)) {
-      axios.delete(deleteUrl)
+      axiosInstance.delete(deleteUrl)
         .then(() => {
           navigate(redirectUrl, { state: { message: successMessage } });
         })

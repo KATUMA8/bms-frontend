@@ -9,23 +9,10 @@ import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import NoDataMessage from "../../components/NoDataMessage";
 import DataTable from "../../components/DataTable";
-import loginUserAtom from "../../atoms/loginUserAtom";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ClientList() {
-  const loginUser = useAtomValue(loginUserAtom) || {
-    userId: 2,
-    name: "鈴木一郎",
-    roleFlag: 2,
-    companyId: 1
-  };
-
-  //  const loginUser = useAtomValue(loginUserAtom) || {
-  //   userId: 1,
-  //   name: "受注者",
-  //   roleFlag: 1, // あるいは発注業者としての判定値
-  //   companyId: null
-  // };
-
+ const loginUser = useAtomValue(loginUserAtom);
   const isAdmin = loginUser?.roleFlag === 1;
 
   const [clients, setClients] = useState([]);

@@ -10,20 +10,14 @@ import { getRemainingDaysText } from "../../utils/dateUtils";
 import { useDeleteHandler } from "../../hooks/useDeleteHandler";
 import { projectApi } from "../../api/projectApi";
 import { useAtomValue } from "jotai";
-import loginUserAtom from "../../atoms/loginUserAtom";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const location = useLocation();
 
-  const loginUser = useAtomValue(loginUserAtom) || {
-    userId: 2,
-    name: "鈴木一郎",
-    roleFlag: 2,
-    companyId: 1
-  };
-
-  const isAdmin = loginUser.roleFlag === 1;
+  const loginUser = useAtomValue(loginUserAtom);
+  const isAdmin = loginUser?.roleFlag === 1;
 
   const [projectData, setProjectData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,13 +35,14 @@ export default function ProjectDetail() {
   const { handleDelete } = useDeleteHandler(
     `/projects/${id}`,
     "/projects",
-    "案件情報を削除しました。"
+    "案件情報を削除しました。",
   );
 
   const fetchProjectDetail = () => {
     setLoading(true);
     // API側でロールに応じた詳細取得パスを切り替え
-    projectApi.getDetail(id, isAdmin)
+    projectApi
+      .getDetail(id, isAdmin)
       .then((data) => {
         setProjectData(data);
       })
@@ -71,7 +66,8 @@ export default function ProjectDetail() {
     formData.append("deadlineDate", deadlineDate);
     formData.append("quoteStatus", "未判定");
 
-    projectApi.addQuote(id, formData)
+    projectApi
+      .addQuote(id, formData)
       .then(() => {
         setSuccessMessage("見積情報を登録しました。");
         setQuoteFile(null);
@@ -86,7 +82,8 @@ export default function ProjectDetail() {
 
   const handleQuoteDelete = (quoteId) => {
     if (window.confirm("この見積を削除しますか？")) {
-      projectApi.deleteQuote(id, quoteId)
+      projectApi
+        .deleteQuote(id, quoteId)
         .then(() => {
           setSuccessMessage("見積情報を削除しました。");
           fetchProjectDetail();
@@ -102,15 +99,20 @@ export default function ProjectDetail() {
   const handleJudge = (quoteId, status) => {
     if (!window.confirm(`この見積を「${status}」にしますか？`)) return;
 
-    projectApi.judgeQuote(id, quoteId, status)
+    projectApi
+      .judgeQuote(id, quoteId, status)
       .then((res) => {
-        setSuccessMessage(res.successMessage || "見積ステータスを更新しました。");
+        setSuccessMessage(
+          res.successMessage || "見積ステータスを更新しました。",
+        );
         setErrorMessage("");
         fetchProjectDetail();
       })
       .catch((error) => {
         console.error("判定エラー:", error);
-        setErrorMessage(error.response?.data?.errorMessage || "判定処理に失敗しました。");
+        setErrorMessage(
+          error.response?.data?.errorMessage || "判定処理に失敗しました。",
+        );
       });
   };
 
@@ -140,41 +142,47 @@ export default function ProjectDetail() {
     { label: "案件状態", value: project.status },
     {
       label: "特記事項",
-      value: <span style={{ whiteSpace: "pre-wrap" }}>{project.projectRemarks}</span>,
+      value: (
+        <span style={{ whiteSpace: "pre-wrap" }}>{project.projectRemarks}</span>
+      ),
     },
   ];
 
-  const latestQuoteDetailItems = latestQuote ? [
-    {
-      label: "見積ファイル",
-      value: (
-        <a
-          href={`http://localhost:8080/${latestQuote.quoteFilepath}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          PDFを表示
-        </a>
-      ),
-    },
-    { label: "現在の判定状態", value: latestQuote.quoteStatus },
-    {
-      label: "判定期限",
-      value: (
-        <span>
-          <span className={isExpired ? "text-danger" : ""}>
-            {latestQuote.deadlineDate ? latestQuote.deadlineDate : "期限設定なし"}
-          </span>
-          {isExpired && (
-            <span className="text-danger" style={{ marginLeft: "5px" }}>
-              (期限切れ)
+  const latestQuoteDetailItems = latestQuote
+    ? [
+        {
+          label: "見積ファイル",
+          value: (
+            <a
+              href={`http://localhost:8080/${latestQuote.quoteFilepath}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              PDFを表示
+            </a>
+          ),
+        },
+        { label: "現在の判定状態", value: latestQuote.quoteStatus },
+        {
+          label: "判定期限",
+          value: (
+            <span>
+              <span className={isExpired ? "text-danger" : ""}>
+                {latestQuote.deadlineDate
+                  ? latestQuote.deadlineDate
+                  : "期限設定なし"}
+              </span>
+              {isExpired && (
+                <span className="text-danger" style={{ marginLeft: "5px" }}>
+                  (期限切れ)
+                </span>
+              )}
             </span>
-          )}
-        </span>
-      ),
-    },
-    { label: "最終更新日", value: latestQuote.quoteDate },
-  ] : [];
+          ),
+        },
+        { label: "最終更新日", value: latestQuote.quoteDate },
+      ]
+    : [];
 
   const historyColumns = [
     { label: "更新日", key: "quoteDate" },
@@ -206,7 +214,10 @@ export default function ProjectDetail() {
       />
 
       {errorMessage && (
-        <div className="alert alert-danger" style={{ marginBottom: "20px", color: "red" }}>
+        <div
+          className="alert alert-danger"
+          style={{ marginBottom: "20px", color: "red" }}
+        >
           {errorMessage}
         </div>
       )}
@@ -218,10 +229,17 @@ export default function ProjectDetail() {
         <div className="action-buttons-form" style={{ marginTop: "20px" }}>
           {isAdmin ? (
             <>
-              <Button to={`/projects/edit/${project.projectId}`} variant="primary">
+              <Button
+                to={`/projects/edit/${project.projectId}`}
+                variant="primary"
+              >
                 案件を編集
               </Button>
-              <Button type="button" variant="danger" onClick={() => handleDelete()}>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => handleDelete()}
+              >
                 案件を削除
               </Button>
               <Button to="/projects" variant="cancel">
@@ -269,7 +287,10 @@ export default function ProjectDetail() {
                 {latestQuote.quoteStatus === "未判定" && !isExpired ? (
                   <>
                     <p style={{ marginBottom: "10px" }}>この見積を判定する</p>
-                    <div className="action-buttons quote-action-buttons" style={{ display: "flex", gap: "10px" }}>
+                    <div
+                      className="action-buttons quote-action-buttons"
+                      style={{ display: "flex", gap: "10px" }}
+                    >
                       <Button
                         type="button"
                         variant="primary"
@@ -287,14 +308,18 @@ export default function ProjectDetail() {
                       <Button
                         type="button"
                         variant="danger"
-                        onClick={() => handleJudge(latestQuote.quoteId, "差戻し")}
+                        onClick={() =>
+                          handleJudge(latestQuote.quoteId, "差戻し")
+                        }
                       >
                         差戻し
                       </Button>
                     </div>
                   </>
                 ) : latestQuote.quoteStatus === "未判定" && isExpired ? (
-                  <p className="text-danger">※有効期限が過ぎているため、判定はできません。</p>
+                  <p className="text-danger">
+                    ※有効期限が過ぎているため、判定はできません。
+                  </p>
                 ) : null}
               </div>
             )}

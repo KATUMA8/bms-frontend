@@ -16,7 +16,7 @@ export default function DataTable({ columns, data, pagination }) {
             data.map((row, rowIndex) => (
               <tr key={row.id || rowIndex}>
                 {columns.map((col, colIndex) => (
-                  <td key={colIndex}>
+                  <td key={colIndex} data-label={col.label}>
                     {col.render ? col.render(row) : row[col.key]}
                   </td>
                 ))}

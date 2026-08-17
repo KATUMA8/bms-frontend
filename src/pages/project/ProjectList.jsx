@@ -8,8 +8,8 @@ import AlertMessage from "../../components/AlertMessage";
 import DataTable from "../../components/DataTable";
 import { useLocation } from "react-router";
 import { useAtomValue } from "jotai";
-import loginUserAtom from "../../atoms/loginUserAtom";
 import { projectApi } from "../../api/projectApi";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ProjectList() {
   const [projects, setProjects] = useState([]);
@@ -17,24 +17,12 @@ export default function ProjectList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const loginUser = useAtomValue(loginUserAtom) || {
-    userId: 2,
-    name: "鈴木一郎",
-    roleFlag: 2,
-    companyId: 1
-  };
-
-  //  const loginUser = useAtomValue(loginUserAtom) || {
-  //   userId: 1,
-  //   name: "受注者",
-  //   roleFlag: 1, // あるいは発注業者としての判定値
-  //   companyId: null
-  // };
+  const loginUser = useAtomValue(loginUserAtom);
   const isAdmin = loginUser?.roleFlag === 1;
 
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState(
-    location.state?.message || ""
+    location.state?.message || "",
   );
 
   const today = new Date().toISOString().split("T")[0];
@@ -71,7 +59,8 @@ export default function ProjectList() {
         const isExpired =
           p.deadlineDate &&
           p.deadlineDate < today &&
-          (p.latestQuoteStatus === "見積中" || p.latestQuoteStatus === "未判定");
+          (p.latestQuoteStatus === "見積中" ||
+            p.latestQuoteStatus === "未判定");
         return isExpired ? (
           <span className="text-danger">期限切れ</span>
         ) : (

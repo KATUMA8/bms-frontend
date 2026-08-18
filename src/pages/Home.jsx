@@ -7,6 +7,7 @@ import DataTable from "../components/DataTable";
 import { getRemainingDaysText } from "../utils/dateUtils";
 import { projectApi } from "../api/projectApi";
 import { loginUserAtom } from "../atoms/loginUserAtom";
+import NoDataMessage from "../components/NoDataMessage";
 
 export default function Home() {
   const loginUser = useAtomValue(loginUserAtom);
@@ -123,7 +124,7 @@ export default function Home() {
     <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="ダッシュボード">
         <div className="login-status">
-          お疲れ様です、<strong>{loginUser?.name || "ゲスト"}</strong>さん
+          お疲れ様です、<strong>{loginUser?.name || "ゲスト"}</strong>さん！
         </div>
       </PageHeader>
 
@@ -134,9 +135,7 @@ export default function Home() {
           {topList.length > 0 ? (
             <DataTable columns={topColumns} data={topList} />
           ) : (
-            <p style={{ textAlign: "center", padding: "20px" }}>
-              現在、表示する案件はありません。
-            </p>
+            <NoDataMessage message="現在、表示する案件はありません。"/>
           )}
 
           <Pagination
@@ -152,9 +151,7 @@ export default function Home() {
           {bottomList.length > 0 ? (
             <DataTable columns={bottomColumns} data={bottomList} />
           ) : (
-            <p style={{ textAlign: "center", padding: "20px" }}>
-              現在、表示する案件はありません。
-            </p>
+            <NoDataMessage message="現在、表示する案件はありません。"/>
           )}
 
           <Pagination

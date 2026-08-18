@@ -7,12 +7,14 @@ import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import Loading from "../../components/Loading";
 import DetailList from "../../components/DetailList";
+import NoDataMessage from "../../components/NoDataMessage";
+import { useDeleteWithCheck } from "../../hooks/useDeleteWithCheck";
 import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ClientDocuments() {
   const { id } = useParams();
 
-const loginUser = useAtomValue(loginUserAtom);
+  const loginUser = useAtomValue(loginUserAtom);
   const isAdmin = loginUser?.roleFlag === 1;
 
   const [client, setClient] = useState(null);
@@ -25,6 +27,21 @@ const loginUser = useAtomValue(loginUserAtom);
     docRemarks: "",
     file: null,
   });
+
+  // 削除処理に共通カスタムフックを使用（対象資料の削除パスを設定）
+  // ※個別削除のため、削除対象のdocIdを渡せるようにカスタムフックをラップ、または個別にハンドリング
+  const handleDelete = (docId) => {
+    if (window.confirm("資料を削除しますか？")) {
+      clientApi.deleteDocument(id, docId)
+        .then((res) => {
+          setDocuments((prevDocs) => prevDocs.filter((doc) => doc.docId !== docId));
+          setSuccessMessage(res.message);
+        })
+        .catch((error) => {
+          console.error("削除エラー:", error);
+        });
+    }
+  };
 
   useEffect(() => {
     clientApi.getDocuments(id, isAdmin)
@@ -79,19 +96,6 @@ const loginUser = useAtomValue(loginUserAtom);
       .catch((error) => {
         console.error("登録エラー:", error);
       });
-  };
-
-  const handleDelete = (docId) => {
-    if (window.confirm("資料を削除しますか？")) {
-      clientApi.deleteDocument(id, docId)
-        .then((res) => {
-          setDocuments(documents.filter((doc) => doc.docId !== docId));
-          setSuccessMessage(res.message);
-        })
-        .catch((error) => {
-          console.error("削除エラー:", error);
-        });
-    }
   };
 
   if (!client) {
@@ -275,9 +279,7 @@ const loginUser = useAtomValue(loginUserAtom);
             })}
           </div>
         ) : (
-          <p style={{ textAlign: "center", padding: "20px" }}>
-            登録されている資料はありません。
-          </p>
+          <NoDataMessage message="登録されている資料はありません。" />
         )}
 
         {!isAdmin && (

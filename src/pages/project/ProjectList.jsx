@@ -112,7 +112,7 @@ export default function ProjectList() {
             />
           </>
         ) : (
-          <NoDataMessage />
+          <NoDataMessage message="現在、登録されている案件はありません。" />
         )}
       </div>
     </div>

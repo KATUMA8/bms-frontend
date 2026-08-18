@@ -1,23 +1,30 @@
 import { useState } from "react";
 import { normalize } from "../utils/formatUtils";
-import { fetchAddressFromApi } from "../api/postalApi"; // ★APIファイルをインポート
+import { fetchAddressFromApi } from "../api/postalApi";
 
-export function usePostalCode(initialValue = "", onAddressFound, onPostalChange) {
+export function usePostalCode(
+  initialValue = "",
+  onAddressFound,
+  onPostalChange,
+) {
   const [postalCode, setPostalCode] = useState(initialValue);
 
+  // ① 入力中は一切加工せず、そのまま素直に受け取る
   const handlePostalChange = (e) => {
-    const cleaned = normalize(e.target.value).slice(0, 7);
-    setPostalCode(cleaned);
-    if (onPostalChange) onPostalChange(cleaned);
+    setPostalCode(e.target.value);
   };
 
-  const formatAndFetchPostalCode = async (valueToFormat) => {
-    let cleaned = normalize(valueToFormat !== undefined ? valueToFormat : postalCode).slice(0, 7);
+  // ② 変換確定時やフォーカスアウト時に、はじめて綺麗に半角化＆7桁に整えてAPIを叩く
+  const formatAndFetchPostalCode = async (e) => {
+    // イベントオブジェクト、または直接渡された値のどちらにも対応できるようにする
+    const targetValue =
+      e && e.target ? e.target.value : e !== undefined ? e : postalCode;
+
+    const cleaned = normalize(targetValue).slice(0, 7);
     setPostalCode(cleaned);
     if (onPostalChange) onPostalChange(cleaned);
 
     if (cleaned.length === 7 && onAddressFound) {
-      // APIファイルを呼び出して住所を取得する
       const fullAddress = await fetchAddressFromApi(cleaned);
       if (fullAddress) {
         onAddressFound(fullAddress);
@@ -25,6 +32,10 @@ export function usePostalCode(initialValue = "", onAddressFound, onPostalChange)
     }
   };
 
-  // 修正：handlePostalCode ではなく handlePostalChange を返す
-  return { postalCode, setPostalCode, handlePostalChange, formatAndFetchPostalCode };
+  return {
+    postalCode,
+    setPostalCode,
+    handlePostalChange,
+    formatAndFetchPostalCode,
+  };
 }

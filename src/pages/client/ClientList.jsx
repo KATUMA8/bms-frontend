@@ -12,7 +12,7 @@ import DataTable from "../../components/DataTable";
 import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ClientList() {
- const loginUser = useAtomValue(loginUserAtom);
+  const loginUser = useAtomValue(loginUserAtom);
   const isAdmin = loginUser?.roleFlag === 1;
 
   const [clients, setClients] = useState([]);
@@ -27,7 +27,8 @@ export default function ClientList() {
 
   useEffect(() => {
     // API側でルーティングがカプセル化されたため、スッキリ呼び出せる
-    clientApi.getList(currentPage, currentKana, isAdmin)
+    clientApi
+      .getList(currentPage, currentKana, isAdmin)
       .then((res) => {
         setClients(res.clients);
         setTotalPages(res.totalPages);
@@ -73,12 +74,18 @@ export default function ClientList() {
 
       <div className="card">
         <h3>顧客一覧</h3>
-        <KanaFilter currentKana={currentKana} onSelectKana={(k) => { setCurrentKana(k); setCurrentPage(1); }} />
+        <KanaFilter
+          currentKana={currentKana}
+          onSelectKana={(k) => {
+            setCurrentKana(k);
+            setCurrentPage(1);
+          }}
+        />
 
         {clients && clients.length > 0 ? (
           <DataTable columns={columns} data={clients} />
         ) : (
-          <NoDataMessage />
+          <NoDataMessage message="現在、登録されている顧客はありません。" />
         )}
 
         <Pagination

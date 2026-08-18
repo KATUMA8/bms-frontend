@@ -11,7 +11,7 @@ import NoDataMessage from "../../components/NoDataMessage";
 import Pagination from "../../components/Pagination";
 import DetailList from "../../components/DetailList";
 import DataTable from "../../components/DataTable";
-import { useDeleteHandler } from "../../hooks/useDeleteHandler";
+import { useDeleteWithCheck } from "../../hooks/useDeleteWithCheck";
 import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function ClientDetail() {
@@ -30,14 +30,23 @@ export default function ClientDetail() {
     location.state?.message || "",
   );
 
-  const { handleDelete } = useDeleteHandler(
+  // 共通化したカスタムフックで2段階削除を適用
+  const { handleDeleteWithCheck } = useDeleteWithCheck(
     `/clients/${id}`,
     "/clients",
     "顧客情報を削除しました。",
+    async () => {
+      const res = await clientApi.getDocuments(id, isAdmin);
+      const docList = Array.isArray(res)
+        ? res
+        : res?.documents || res?.data || [];
+      return docList.length > 0;
+    },
   );
 
   useEffect(() => {
-    clientApi.getDetail(id, currentPage, isAdmin)
+    clientApi
+      .getDetail(id, currentPage, isAdmin)
       .then((res) => {
         setClient(res.client);
         setProjects(res.projects || []);
@@ -107,7 +116,7 @@ export default function ClientDetail() {
               <Button
                 type="button"
                 variant="danger"
-                onClick={() => handleDelete()}
+                onClick={handleDeleteWithCheck}
               >
                 削除
               </Button>

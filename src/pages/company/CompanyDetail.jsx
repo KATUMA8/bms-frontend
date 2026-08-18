@@ -10,7 +10,7 @@ import NoDataMessage from "../../components/NoDataMessage";
 import Pagination from "../../components/Pagination";
 import DetailList from "../../components/DetailList";
 import DataTable from "../../components/DataTable";
-import { useDeleteHandler } from "../../hooks/useDeleteHandler";
+import { useDeleteWithCheck } from "../../hooks/useDeleteWithCheck";
 
 export default function CompanyDetail() {
   const { id } = useParams();
@@ -25,14 +25,19 @@ export default function CompanyDetail() {
     location.state?.message || "",
   );
 
-  const { handleDelete } = useDeleteHandler(
+  // 共通化したカスタムフックで2段階削除を適用
+  const { handleDeleteWithCheck } = useDeleteWithCheck(
     `/companys/${id}`,
     "/companys",
-    "業者情報を削除しました。"
+    "業者情報を削除しました。",
+    async () => {
+      return projects.length > 0;
+    },
   );
 
-  useEffect(() => {
-    companyApi.getDetail(id, currentPage)
+  const fetchCompanyDetail = () => {
+    companyApi
+      .getDetail(id, currentPage)
       .then((res) => {
         setCompany(res.company);
         setProjects(res.projects || []);
@@ -41,6 +46,10 @@ export default function CompanyDetail() {
       .catch((error) => {
         console.error("データ取得エラー:", error);
       });
+  };
+
+  useEffect(() => {
+    fetchCompanyDetail();
   }, [id, currentPage]);
 
   const handlePageChange = (newPage) => {
@@ -88,11 +97,18 @@ export default function CompanyDetail() {
         <h3>業者情報</h3>
         <DetailList items={detailItems} />
 
-        <div className="action-buttons-form" style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+        <div
+          className="action-buttons-form"
+          style={{ marginTop: "20px", display: "flex", gap: "10px" }}
+        >
           <Button to={`/companys/edit/${company.companyId}`} variant="primary">
             編集
           </Button>
-          <Button type="button" variant="danger" onClick={() => handleDelete()}>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleDeleteWithCheck}
+          >
             削除
           </Button>
           <Button to="/companys" variant="cancel">

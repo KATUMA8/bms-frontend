@@ -593,11 +593,6 @@ textarea.field-error {
 	}
 }
 
-/* 見積情報カードの中にあるボタンエリアだけを対象にする */
-.card .quote-action-buttons {
-	margin-bottom: 50px;
-}
-
 /* ==========================================================================
    追加：見積プレビュー用モーダル & 新規登録エリアのスタイル（!important不使用）
    ========================================================================== */
@@ -783,6 +778,8 @@ textarea.field-error {
 	position: relative;
 }
 
+
+
 /* iframe(PDF)とimg(画像)を枠に強制フィットさせる */
 .preview-box iframe,
 .preview-box img {
@@ -790,6 +787,7 @@ textarea.field-error {
 	height: 100%;
 	border: none;
 	display: block;
+
 
 	/* 画像用：枠内に収める */
 	object-fit: contain;

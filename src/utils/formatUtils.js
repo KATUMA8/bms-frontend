@@ -77,5 +77,5 @@ export function normalizeKana(kana) {
   }
 
   // 2. スペース（半角・全角）を削除
-  return sb.replace(/[\s ]/g, "");
+  return sb.replace(/[\s ]/g, "").replace(/[^ァ-ヶー]/g, "");
 }

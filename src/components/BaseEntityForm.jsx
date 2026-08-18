@@ -59,8 +59,8 @@ export default function BaseEntityForm({
     }));
   });
 
-  const { phone, setPhone, handlePhoneChange } = usePhone("");
-
+  const { phone, setPhone, handlePhoneChange, formatPhoneOnBlur } =
+    usePhone("");
   const [errors, setErrors] = useState({});
   const [hasError, setHasError] = useState(false);
 
@@ -166,7 +166,7 @@ export default function BaseEntityForm({
       : apiEndpoint;
 
     axiosInstance
-  .post(url, submitData)
+      .post(url, submitData)
       .then((res) => {
         const targetId = isEdit ? id : res.data[idKey];
         const basePath = apiEndpoint.includes("clients")
@@ -236,8 +236,9 @@ export default function BaseEntityForm({
                 name={postalField}
                 value={postalCode}
                 onChange={handlePostalChange}
-                onBlur={(e) => formatAndFetchPostalCode(e.target.value)}
-                maxLength="7"
+                onCompositionEnd={formatAndFetchPostalCode} // ★追加：変換確定のエンターで1発成型＆API取得
+                onBlur={formatAndFetchPostalCode} // フォーカスアウト時
+                // maxLength="7" ← ここを削除する！ (usePostalCode側でsliceするため、ハイフン込みでも後ろが消えません)
                 className={errors[postalField] ? "field-error" : ""}
                 placeholder="郵便番号を入力(ハイフンなし)"
                 autoComplete="off"
@@ -255,6 +256,7 @@ export default function BaseEntityForm({
               placeholder="住所を入力"
             />
 
+            {/* BaseEntityForm.jsx の電話番号部分 */}
             <div className="form-group-block">
               <label>
                 {labels[phoneField]} <span className="required">(必須)</span>
@@ -264,7 +266,9 @@ export default function BaseEntityForm({
                 name={phoneField}
                 value={phone}
                 onChange={handlePhoneChange}
-                maxLength="11"
+                onCompositionEnd={formatPhoneOnBlur}
+                onBlur={formatPhoneOnBlur}
+                // maxLength="11" ← ここを削除する！ (usePhone側でsliceするため)
                 placeholder="電話番号を入力(ハイフンなし)"
                 className={errors[phoneField] ? "field-error" : ""}
               />

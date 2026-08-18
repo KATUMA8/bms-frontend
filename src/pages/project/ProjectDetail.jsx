@@ -6,9 +6,8 @@ import PageHeader from "../../components/PageHeader";
 import Loading from "../../components/Loading";
 import DetailList from "../../components/DetailList";
 import DataTable from "../../components/DataTable";
-import { getRemainingDaysText } from "../../utils/dateUtils";
-import { useDeleteHandler } from "../../hooks/useDeleteHandler";
 import { projectApi } from "../../api/projectApi";
+import { useDeleteWithCheck } from "../../hooks/useDeleteWithCheck";
 import { useAtomValue } from "jotai";
 import { loginUserAtom } from "../../atoms/loginUserAtom";
 
@@ -32,15 +31,20 @@ export default function ProjectDetail() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const { handleDelete } = useDeleteHandler(
+  // 共通化したカスタムフックで2段階削除を適用
+  const { handleDeleteWithCheck } = useDeleteWithCheck(
     `/projects/${id}`,
     "/projects",
     "案件情報を削除しました。",
+    async () => {
+      if (!projectData) return false;
+      const { latestQuote, historyList = [] } = projectData;
+      return Boolean(latestQuote || historyList.length > 0);
+    },
   );
 
   const fetchProjectDetail = () => {
     setLoading(true);
-    // API側でロールに応じた詳細取得パスを切り替え
     projectApi
       .getDetail(id, isAdmin)
       .then((data) => {
@@ -81,7 +85,7 @@ export default function ProjectDetail() {
   };
 
   const handleQuoteDelete = (quoteId) => {
-    if (window.confirm("この見積を削除しますか？")) {
+    if (window.confirm("最新の見積を削除しますか？")) {
       projectApi
         .deleteQuote(id, quoteId)
         .then(() => {
@@ -95,7 +99,6 @@ export default function ProjectDetail() {
     }
   };
 
-  // 【発注業者用】見積判定
   const handleJudge = (quoteId, status) => {
     if (!window.confirm(`この見積を「${status}」にしますか？`)) return;
 
@@ -103,7 +106,7 @@ export default function ProjectDetail() {
       .judgeQuote(id, quoteId, status)
       .then((res) => {
         setSuccessMessage(
-          res.successMessage || "見積ステータスを更新しました。",
+          res.successMessage || "見積の判定が完了しました。",
         );
         setErrorMessage("");
         fetchProjectDetail();
@@ -185,7 +188,7 @@ export default function ProjectDetail() {
     : [];
 
   const historyColumns = [
-    { label: "更新日", key: "quoteDate" },
+    { label: "判定日", key: "quoteDate" },
     { label: "判定状態", key: "quoteStatus" },
     { label: "判定者", render: (h) => h.judgeUser || "-" },
     {
@@ -233,14 +236,14 @@ export default function ProjectDetail() {
                 to={`/projects/edit/${project.projectId}`}
                 variant="primary"
               >
-                案件を編集
+                編集
               </Button>
               <Button
                 type="button"
                 variant="danger"
-                onClick={() => handleDelete()}
+                onClick={handleDeleteWithCheck}
               >
-                案件を削除
+                削除
               </Button>
               <Button to="/projects" variant="cancel">
                 案件一覧へ戻る
@@ -265,21 +268,21 @@ export default function ProjectDetail() {
 
             {isAdmin ? (
               <div
-                className="action-buttons quote-action-buttons"
+                className="action-buttons-form"
                 style={{ marginBottom: "20px" }}
               >
                 <Button
                   to={`/projects/${project.projectId}/quotes/edit/${latestQuote.quoteId}`}
-                  variant="secondary"
+                  variant="primary"
                 >
-                  見積を編集
+                  編集
                 </Button>
                 <Button
                   type="button"
                   variant="danger"
                   onClick={() => handleQuoteDelete(latestQuote.quoteId)}
                 >
-                  見積を削除
+                  削除
                 </Button>
               </div>
             ) : (

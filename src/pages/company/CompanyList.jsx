@@ -8,8 +8,14 @@ import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import NoDataMessage from "../../components/NoDataMessage";
 import DataTable from "../../components/DataTable";
+import { useAtomValue } from "jotai";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 
 export default function CompanyList() {
+  // 一覧画面は閲覧制限（リダイレクト）をかけないため、従来通りAtomからフラグのみ取得
+  const loginUser = useAtomValue(loginUserAtom);
+  const isAdmin = loginUser?.roleFlag === 1;
+
   const [companys, setCompanys] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -21,7 +27,8 @@ export default function CompanyList() {
   );
 
   useEffect(() => {
-    companyApi.getList(currentPage, currentKana)
+    companyApi
+      .getList(currentPage, currentKana)
       .then((res) => {
         setCompanys(res.companys);
         setTotalPages(res.totalPages);
@@ -56,7 +63,7 @@ export default function CompanyList() {
   ];
 
   return (
-    <div className="content-wrapper">
+    <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="業者管理" />
 
       <AlertMessage
@@ -66,11 +73,13 @@ export default function CompanyList() {
         onClose={() => setSuccessMessage("")}
       />
 
-      <div className="action-bar">
-        <Button to="/companys/add" variant="primary">
-          新規業者登録
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="action-bar">
+          <Button to="/companys/add" variant="primary">
+            新規業者登録
+          </Button>
+        </div>
+      )}
 
       <div className="card">
         <h3>業者一覧</h3>

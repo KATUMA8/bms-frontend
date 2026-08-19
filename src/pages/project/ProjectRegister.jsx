@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router"
+import { useAtomValue } from "jotai";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 import { FORM_LABELS } from "../../utils/formLabels";
 import { VALIDATION_MESSAGES } from "../../utils/validationMessages";
 import { projectApi } from "../../api/projectApi";
 import BaseProjectForm from "../../components/BaseProjectForm";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 export default function ProjectRegister() {
-  const navigate = useNavigate();
+  // 管理者以外は案件一覧へリダイレクト
+  useAdminGuard("/projects");
+
+  const navigate = useNavigate(); // ★ 1. 宣言を追加
+  const loginUser = useAtomValue(loginUserAtom);
+  const isAdmin = loginUser?.roleFlag === 1;
+
   const labels = FORM_LABELS.project;
 
   const [projectForm, setProjectForm] = useState({
@@ -26,7 +35,8 @@ export default function ProjectRegister() {
   const [serverError, setServerError] = useState("");
 
   useEffect(() => {
-    projectApi.getFormData()
+    projectApi
+      .getFormData()
       .then((data) => {
         setClients(data.clients);
         setCompanies(data.companies);
@@ -43,14 +53,26 @@ export default function ProjectRegister() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isAdmin) return;
+
     const newErrors = {};
 
-    if (!projectForm.projectName.trim()) newErrors.projectName = VALIDATION_MESSAGES.required(labels.projectName);
-    if (!projectForm.clientId) newErrors.clientId = VALIDATION_MESSAGES.required(labels.clientId);
-    if (!projectForm.companyId) newErrors.companyId = VALIDATION_MESSAGES.required(labels.companyId);
-    if (!projectForm.projectStaffname.trim()) newErrors.projectStaffname = VALIDATION_MESSAGES.required(labels.projectStaffname);
-    if (!projectForm.contractType) newErrors.contractType = VALIDATION_MESSAGES.required(labels.contractType);
-    if (!projectForm.status) newErrors.status = VALIDATION_MESSAGES.required(labels.status);
+    if (!projectForm.projectName.trim())
+      newErrors.projectName = VALIDATION_MESSAGES.required(labels.projectName);
+    if (!projectForm.clientId)
+      newErrors.clientId = VALIDATION_MESSAGES.required(labels.clientId);
+    if (!projectForm.companyId)
+      newErrors.companyId = VALIDATION_MESSAGES.required(labels.companyId);
+    if (!projectForm.projectStaffname.trim())
+      newErrors.projectStaffname = VALIDATION_MESSAGES.required(
+        labels.projectStaffname,
+      );
+    if (!projectForm.contractType)
+      newErrors.contractType = VALIDATION_MESSAGES.required(
+        labels.contractType,
+      );
+    if (!projectForm.status)
+      newErrors.status = VALIDATION_MESSAGES.required(labels.status);
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -62,13 +84,25 @@ export default function ProjectRegister() {
     setErrors({});
     setServerError("");
 
-    projectApi.add(projectForm)
+    projectApi
+      .add(projectForm)
       .then((res) => {
-        navigate(`/projects/${res.projectId}`, {
-          state: { message: "新規案件を登録しました。" },
-        });
+        // ★ レスポンスの構造に合わせてIDの取得先を調整（res または res.data など）
+        const createdId = res?.projectId || res?.data?.projectId;
+
+        if (createdId) {
+          navigate(`/projects/${createdId}`, {
+            state: { message: "新規案件を登録しました。" },
+          });
+        } else {
+          // 万が一IDが取れなくても登録自体は成功しているので一覧へ飛ばす場合
+          navigate("/projects", {
+            state: { message: "新規案件を登録しました。" },
+          });
+        }
       })
       .catch((err) => {
+        console.error("登録エラー詳細:", err); // デバッグ用にコンソール出力
         if (err.response && err.response.status === 400) {
           const errorData = err.response.data;
           if (Array.isArray(errorData)) {

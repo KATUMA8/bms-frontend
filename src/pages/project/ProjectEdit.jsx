@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
+import { useAtomValue } from "jotai";
+import { loginUserAtom } from "../../atoms/loginUserAtom";
 import FieldError from "../../components/FieldError";
 import FormAlert from "../../components/FormAlert";
 import { FORM_LABELS } from "../../utils/formLabels";
@@ -7,10 +9,18 @@ import { VALIDATION_MESSAGES } from "../../utils/validationMessages";
 import Button from "../../atoms/Button";
 import PageHeader from "../../components/PageHeader";
 import { projectApi } from "../../api/projectApi";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 export default function ProjectEdit() {
   const { id } = useParams();
+
+  // 管理者以外は詳細画面へリダイレクト
+  useAdminGuard(`/projects/${id}`);
+
   const navigate = useNavigate();
+  const loginUser = useAtomValue(loginUserAtom);
+  const isAdmin = loginUser?.roleFlag === 1;
+
   const labels = FORM_LABELS.project;
 
   const [projectForm, setProjectForm] = useState({
@@ -32,7 +42,8 @@ export default function ProjectEdit() {
   const [serverError, setServerError] = useState("");
 
   useEffect(() => {
-    projectApi.getEditData(id)
+    projectApi
+      .getEditData(id)
       .then((data) => {
         if (data.project) {
           setProjectForm(data.project);
@@ -59,6 +70,7 @@ export default function ProjectEdit() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isAdmin) return;
 
     const newErrors = {};
 
@@ -95,7 +107,8 @@ export default function ProjectEdit() {
     setErrors({});
     setServerError("");
 
-    projectApi.update(id, projectForm)
+    projectApi
+      .update(id, projectForm)
       .then(() => {
         navigate(`/projects/${id}`, {
           state: { message: "案件情報を更新しました。" },

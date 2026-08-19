@@ -15,8 +15,14 @@ import CompanyList from "./pages/company/CompanyList";
 import CompanyRegister from "./pages/company/CompanyRegister";
 import CompanyEdit from "./pages/company/CompanyEdit";
 import CompanyDetail from "./pages/company/CompanyDetail";
+import User from "./pages/User";
 
 const router = createBrowserRouter([
+  // --- ログイン ---
+  {
+    path: "/login", // または /user など好みのパス
+    Component: User,
+  },
   {
     path: "/",
     Component: App,

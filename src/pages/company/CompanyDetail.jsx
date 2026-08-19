@@ -11,10 +11,14 @@ import Pagination from "../../components/Pagination";
 import DetailList from "../../components/DetailList";
 import DataTable from "../../components/DataTable";
 import { useDeleteWithCheck } from "../../hooks/useDeleteWithCheck";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 export default function CompanyDetail() {
   const { id } = useParams();
   const location = useLocation();
+
+  // フックでガードしつつ、isAdminを受け取る（管理者以外は "/" へリダイレクト）
+  const { isAdmin } = useAdminGuard("/");
 
   const [company, setCompany] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -49,8 +53,10 @@ export default function CompanyDetail() {
   };
 
   useEffect(() => {
-    fetchCompanyDetail();
-  }, [id, currentPage]);
+    if (isAdmin) {
+      fetchCompanyDetail();
+    }
+  }, [id, currentPage, isAdmin]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -101,16 +107,23 @@ export default function CompanyDetail() {
           className="action-buttons-form"
           style={{ marginTop: "20px", display: "flex", gap: "10px" }}
         >
-          <Button to={`/companys/edit/${company.companyId}`} variant="primary">
-            編集
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            onClick={handleDeleteWithCheck}
-          >
-            削除
-          </Button>
+          {isAdmin && (
+            <>
+              <Button
+                to={`/companys/edit/${company.companyId}`}
+                variant="primary"
+              >
+                編集
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={handleDeleteWithCheck}
+              >
+                削除
+              </Button>
+            </>
+          )}
           <Button to="/companys" variant="cancel">
             業者一覧へ戻る
           </Button>

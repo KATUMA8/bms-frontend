@@ -1,7 +1,11 @@
 import BaseEntityForm from "../../components/BaseEntityForm";
 import { FORM_LABELS } from "../../utils/formLabels";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 export default function ClientRegister() {
+  // 管理者以外は自動で "/clients" へリダイレクト
+  useAdminGuard("/clients");
+
   return (
     <BaseEntityForm
       title="新規顧客登録"

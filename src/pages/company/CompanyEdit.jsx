@@ -1,7 +1,14 @@
+import { useParams } from "react-router";
 import BaseEntityForm from "../../components/BaseEntityForm";
 import { FORM_LABELS } from "../../utils/formLabels";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 export default function CompanyEdit() {
+  const { id } = useParams();
+
+  // 管理者以外は該当の業者詳細へリダイレクト
+  useAdminGuard(`/companys/${id}`);
+
   return (
     <BaseEntityForm
       title="業者情報編集"

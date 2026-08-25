@@ -81,13 +81,14 @@ export default function ClientDetail() {
 
   const projectColumns = [
     { label: "案件名", key: "projectName" },
-    { label: "ステータス", key: "status" },
+    ...(isAdmin ? [{ label: "発注業者", key: "companyName" }] : []),
+    { label: "案件状態", key: "status" },
     {
       label: "操作",
       render: (p) => (
-        <Link to={`/projects/${p.projectId}`} className="btn">
+        <Button to={`/projects/${p.projectId}`} variant="primary">
           詳細
-        </Link>
+        </Button>
       ),
     },
   ];
@@ -129,7 +130,7 @@ export default function ClientDetail() {
       </div>
 
       <div className="card">
-        <h3>関連案件一覧</h3>
+        <h3>関連案件</h3>
         {projects.length > 0 ? (
           <>
             <DataTable columns={projectColumns} data={projects} />

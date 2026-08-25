@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router"
-import { useAtomValue } from "jotai";
-import { loginUserAtom } from "../../atoms/loginUserAtom";
 import { FORM_LABELS } from "../../utils/formLabels";
 import { VALIDATION_MESSAGES } from "../../utils/validationMessages";
 import { projectApi } from "../../api/projectApi";
@@ -12,9 +10,7 @@ export default function ProjectRegister() {
   // 管理者以外は案件一覧へリダイレクト
   useAdminGuard("/projects");
 
-  const navigate = useNavigate(); // ★ 1. 宣言を追加
-  const loginUser = useAtomValue(loginUserAtom);
-  const isAdmin = loginUser?.roleFlag === 1;
+  const navigate = useNavigate();
 
   const labels = FORM_LABELS.project;
 
@@ -53,7 +49,6 @@ export default function ProjectRegister() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isAdmin) return;
 
     const newErrors = {};
 

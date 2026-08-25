@@ -105,9 +105,7 @@ export default function ProjectDetail() {
     projectApi
       .judgeQuote(id, quoteId, status)
       .then((res) => {
-        setSuccessMessage(
-          res.successMessage || "見積の判定が完了しました。",
-        );
+        setSuccessMessage(`見積を「${status}」判定しました。`);
         setErrorMessage("");
         fetchProjectDetail();
       })

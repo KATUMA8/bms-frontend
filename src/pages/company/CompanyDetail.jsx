@@ -17,8 +17,8 @@ export default function CompanyDetail() {
   const { id } = useParams();
   const location = useLocation();
 
-  // フックでガードしつつ、isAdminを受け取る（管理者以外は "/" へリダイレクト）
-  const { isAdmin } = useAdminGuard("/");
+  // 管理者以外はホームへ自動リダイレクト（これだけでこの下のコードは全員管理者と確定）
+  useAdminGuard("/");
 
   const [company, setCompany] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -39,7 +39,8 @@ export default function CompanyDetail() {
     },
   );
 
-  const fetchCompanyDetail = () => {
+  useEffect(() => {
+    // 管理者しかここにいないため、if (isAdmin) のチェックが不要になります
     companyApi
       .getDetail(id, currentPage)
       .then((res) => {
@@ -50,13 +51,7 @@ export default function CompanyDetail() {
       .catch((error) => {
         console.error("データ取得エラー:", error);
       });
-  };
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchCompanyDetail();
-    }
-  }, [id, currentPage, isAdmin]);
+  }, [id, currentPage]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -107,23 +102,17 @@ export default function CompanyDetail() {
           className="action-buttons-form"
           style={{ marginTop: "20px", display: "flex", gap: "10px" }}
         >
-          {isAdmin && (
-            <>
-              <Button
-                to={`/companys/edit/${company.companyId}`}
-                variant="primary"
-              >
-                編集
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleDeleteWithCheck}
-              >
-                削除
-              </Button>
-            </>
-          )}
+          {/* 管理者専用なので無条件で編集・削除ボタンを表示してOK */}
+          <Button to={`/companys/edit/${company.companyId}`} variant="primary">
+            編集
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleDeleteWithCheck}
+          >
+            削除
+          </Button>
           <Button to="/companys" variant="cancel">
             業者一覧へ戻る
           </Button>
@@ -131,7 +120,7 @@ export default function CompanyDetail() {
       </div>
 
       <div className="card">
-        <h3>関連案件一覧</h3>
+        <h3>関連案件</h3>
         {projects.length > 0 ? (
           <>
             <DataTable columns={projectColumns} data={projects} />

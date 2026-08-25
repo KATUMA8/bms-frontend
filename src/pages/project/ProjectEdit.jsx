@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useAtomValue } from "jotai";
-import { loginUserAtom } from "../../atoms/loginUserAtom";
 import FieldError from "../../components/FieldError";
 import FormAlert from "../../components/FormAlert";
 import { FORM_LABELS } from "../../utils/formLabels";
@@ -18,8 +16,6 @@ export default function ProjectEdit() {
   useAdminGuard(`/projects/${id}`);
 
   const navigate = useNavigate();
-  const loginUser = useAtomValue(loginUserAtom);
-  const isAdmin = loginUser?.roleFlag === 1;
 
   const labels = FORM_LABELS.project;
 
@@ -70,7 +66,6 @@ export default function ProjectEdit() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isAdmin) return;
 
     const newErrors = {};
 

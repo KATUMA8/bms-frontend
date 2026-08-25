@@ -4,10 +4,14 @@ import PageHeader from "../../components/PageHeader";
 import Button from "../../atoms/Button";
 import DetailList from "../../components/DetailList";
 import { projectApi } from "../../api/projectApi";
+import { useAdminGuard } from "./../../hooks/useAdminGuard";
 
 export default function QuoteEdit() {
   const { pid, id } = useParams();
   const navigate = useNavigate();
+
+  // 管理者以外はプロジェクト詳細へリダイレクト
+  useAdminGuard(`/projects/${pid}`);
 
   const [quoteForm, setQuoteForm] = useState({
     quoteId: id,
@@ -20,7 +24,8 @@ export default function QuoteEdit() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    projectApi.getQuote(pid, id)
+    projectApi
+      .getQuote(pid, id)
       .then((data) => {
         setQuoteForm(data);
         setLoading(false);
@@ -43,9 +48,12 @@ export default function QuoteEdit() {
       formData.append("file", file);
     }
 
-    projectApi.updateQuote(pid, id, formData)
+    projectApi
+      .updateQuote(pid, id, formData)
       .then(() => {
-        navigate(`/projects/${pid}`, { state: { message: "見積情報を更新しました。" } });
+        navigate(`/projects/${pid}`, {
+          state: { message: "見積情報を更新しました。" },
+        });
       })
       .catch((error) => {
         console.error("更新エラー:", error);
@@ -59,7 +67,11 @@ export default function QuoteEdit() {
     {
       label: "現在の見積書",
       value: (
-        <a href={`http://localhost:8080/${quoteForm.quoteFilepath}`} target="_blank" rel="noreferrer">
+        <a
+          href={`http://localhost:8080/${quoteForm.quoteFilepath}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           PDFを確認
         </a>
       ),
@@ -81,7 +93,9 @@ export default function QuoteEdit() {
           type="date"
           value={quoteForm.deadlineDate || ""}
           required
-          onChange={(e) => setQuoteForm({ ...quoteForm, deadlineDate: e.target.value })}
+          onChange={(e) =>
+            setQuoteForm({ ...quoteForm, deadlineDate: e.target.value })
+          }
         />
       ),
     },
@@ -102,8 +116,12 @@ export default function QuoteEdit() {
           <DetailList items={detailItems} />
 
           <div className="action-buttons-form">
-            <Button type="submit" variant="primary">更新する</Button>
-            <Button to={`/projects/${pid}`} variant="cancel">キャンセル</Button>
+            <Button type="submit" variant="primary">
+              更新する
+            </Button>
+            <Button to={`/projects/${pid}`} variant="cancel">
+              キャンセル
+            </Button>
           </div>
         </form>
       </div>

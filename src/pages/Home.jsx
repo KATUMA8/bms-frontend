@@ -25,7 +25,7 @@ export default function Home() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // ロールが切り替わったときにページを1ページ目にリセットするオプション
+  // ロールが切り替わったときにデータを取得
   useEffect(() => {
     const qPage = isAdmin ? topPage : bottomPage;
     const pPage = isAdmin ? bottomPage : topPage;
@@ -57,31 +57,41 @@ export default function Home() {
 
   // ★ 上部セクション用のカラム定義
   const topColumns = [
-    ...(isAdmin
-      ? []
-      : [
-          {
-            label: "期限",
-            render: (p) => {
-              const isExpired =
-                p.quoteStatus === "未判定" &&
-                p.deadlineDate &&
-                p.deadlineDate < today;
-              return (
-                <span className={isExpired ? "text-danger" : ""}>
-                  {getRemainingDaysText(p.deadlineDate, today)}
-                </span>
-              );
-            },
-          },
-        ]),
     { label: "顧客名", key: "clientName" },
     ...(isAdmin ? [{ label: "発注業者", key: "companyName" }] : []),
     { label: "案件名", key: "projectName" },
     {
+      label: isAdmin ? "見積状態" : "判定期限",
+      render: (p) => {
+        if (!isAdmin) {
+          // 発注業者の場合（上部は「判定待ち案件」なので判定期限を表示）
+          const isExpired =
+            p.deadlineDate &&
+            p.deadlineDate < today &&
+            p.quoteStatus === "未判定";
+          return (
+            <span className={isExpired ? "text-danger" : ""}>
+              {getRemainingDaysText(p.deadlineDate, today)}
+            </span>
+          );
+        }
+        // 管理者の場合の見積状態
+        const isExpired =
+          p.deadlineDate &&
+          p.deadlineDate < today &&
+          (p.latestQuoteStatus === "見積中" ||
+            p.latestQuoteStatus === "未判定");
+        if (isExpired) {
+          return <span className="text-danger">期限切れ</span>;
+        }
+        const statusText = p.latestQuoteStatus ? p.latestQuoteStatus : "見積中";
+        return <span>{statusText}</span>;
+      },
+    },
+    {
       label: "操作",
       render: (p) => (
-        <Button to={`/projects/${p.projectId}`} variant="secondary">
+        <Button to={`/projects/${p.projectId}`} variant="primary">
           {isAdmin ? "詳細" : "判定"}
         </Button>
       ),
@@ -90,30 +100,33 @@ export default function Home() {
 
   // ★ 下部セクション用のカラム定義
   const bottomColumns = [
-    ...(isAdmin
-      ? [
-          {
-            label: "期限",
-            render: (p) => {
-              const isExpired =
-                p.quoteStatus === "未判定" &&
-                p.deadlineDate &&
-                p.deadlineDate < today;
-              return (
-                <span className={isExpired ? "text-danger" : ""}>
-                  {getRemainingDaysText(p.deadlineDate, today)}
-                </span>
-              );
-            },
-          },
-        ]
-      : []),
-    { label: "顧客", key: "clientName" },
+    { label: "顧客名", key: "clientName" },
+    ...(isAdmin ? [{ label: "発注業者", key: "companyName" }] : []),
     { label: "案件名", key: "projectName" },
+    {
+      label: isAdmin ? "判定期限" : "見積状態",
+      render: (p) => {
+        if (isAdmin) {
+          // 管理者の場合（下部は「判定待ち案件」なので判定期限を表示）
+          const isExpired =
+            p.deadlineDate &&
+            p.deadlineDate < today &&
+            p.quoteStatus === "未判定";
+          return (
+            <span className={isExpired ? "text-danger" : ""}>
+              {getRemainingDaysText(p.deadlineDate, today)}
+            </span>
+          );
+        }
+        // 発注業者の場合（下部は「見積状態」を表示）
+        const statusText = p.latestQuoteStatus ? p.latestQuoteStatus : "見積中";
+        return <span>{statusText}</span>;
+      },
+    },
     {
       label: "操作",
       render: (p) => (
-        <Button to={`/projects/${p.projectId}`} variant="secondary">
+        <Button to={`/projects/${p.projectId}`} variant="primary">
           詳細
         </Button>
       ),
@@ -124,7 +137,7 @@ export default function Home() {
     <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="ダッシュボード">
         <div className="login-status">
-          お疲れ様です、<strong>{loginUser?.name || "ゲスト"}</strong>さん！
+          お疲れ様です、<strong>{loginUser?.name || "ゲスト"}</strong>さん
         </div>
       </PageHeader>
 
@@ -135,7 +148,7 @@ export default function Home() {
           {topList.length > 0 ? (
             <DataTable columns={topColumns} data={topList} />
           ) : (
-            <NoDataMessage message="現在、表示する案件はありません。"/>
+            <NoDataMessage message="現在、表示する案件はありません。" />
           )}
 
           <Pagination
@@ -151,7 +164,7 @@ export default function Home() {
           {bottomList.length > 0 ? (
             <DataTable columns={bottomColumns} data={bottomList} />
           ) : (
-            <NoDataMessage message="現在、表示する案件はありません。"/>
+            <NoDataMessage message="現在、表示する案件はありません。" />
           )}
 
           <Pagination

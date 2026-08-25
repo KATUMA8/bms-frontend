@@ -4,7 +4,7 @@ import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 export default function ClientRegister() {
   // 管理者以外は自動で "/clients" へリダイレクト
-  useAdminGuard("/clients");
+ useAdminGuard("/clients");
 
   return (
     <BaseEntityForm

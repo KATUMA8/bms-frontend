@@ -6,8 +6,8 @@ import { useAdminGuard } from "../../hooks/useAdminGuard";
 export default function CompanyEdit() {
   const { id } = useParams();
 
-  // 管理者以外は該当の業者詳細へリダイレクト
-  useAdminGuard(`/companys/${id}`);
+   // 管理者以外はホームへリダイレクト
+    useAdminGuard("/");
 
   return (
     <BaseEntityForm

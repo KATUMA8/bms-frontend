@@ -26,36 +26,41 @@ export default function User() {
 
   return (
     <div className="login-page">
-      <div className="main-content" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+      <div className="main-content login-content-wrapper">
+        <h1 className="login-image">BMS System</h1>
         <div className="login-box">
-          <h2 style={{ marginBottom: "20px", color: "var(--side-bg)" }}>ログイン</h2>
+          <h2 className="login-title">ログイン</h2>
 
-          {error && <p className="error-text" style={{ textAlign: "center" }}>{error}</p>}
+          {error && <p className="error-text login-error-text">{error}</p>}
 
           <form onSubmit={handleLogin}>
-            <div className="form-group" style={{ textAlign: "left" }}>
-              <label>ログインID</label>
+            <div className="login-form-group">
+              <label className="login-label">ログインID</label>
               <input
                 type="text"
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}
                 required
-                placeholder="例: admin または ks_narita または st_suzuki"
+                placeholder="例: admin / ks_narita / st_suzuki"
               />
             </div>
 
-            <div className="form-group" style={{ textAlign: "left", marginBottom: "20px" }}>
-              <label>パスワード</label>
+            <div className="login-form-group-mb">
+              <label className="login-label">パスワード</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="パスワードを入力(aaa/bbb/ccc)"
+                placeholder="例：aaa / bbb / ccc"
               />
             </div>
 
-            <Button type="submit" variant="primary" className="btn btn-primary" style={{ width: "100%" }}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="btn btn-primary login-submit-btn"
+            >
               ログイン
             </Button>
           </form>

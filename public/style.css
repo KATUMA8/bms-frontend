@@ -786,3 +786,58 @@ details[open] summary::before {
     width: 100%;
   }
 }
+
+/* --- ログイン用 --- */
+.login-content-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-image {
+  color: white;
+  text-align: center;
+}
+
+.login-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: var(--side-bg);
+}
+
+.login-error-text {
+  text-align: center;
+}
+
+.login-form-group {
+  text-align: left;
+}
+
+.login-form-group-mb {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.login-submit-btn {
+  width: 100%;
+}
+
+.login-label {
+  margin-bottom: 0;
+  font-weight: bold;
+}
+
+.login-image {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10vw;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.15); /* ほとんど見えないくらいのうっすら透過ホワイト */
+  white-space: nowrap;
+  z-index: 1;
+  pointer-events: none;   /* マウス操作を邪魔しないようにする */
+  letter-spacing: -5px;
+}

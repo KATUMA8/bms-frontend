@@ -136,9 +136,13 @@ export default function Home() {
   return (
     <div className={`content-wrapper ${isAdmin ? "" : "theme-contractee"}`}>
       <PageHeader title="ダッシュボード">
-        <div className="login-status">
-          お疲れ様です、<strong>{loginUser?.name || "ゲスト"}</strong>さん
-        </div>
+       <div className="login-status">
+  お疲れ様です、
+  <strong>
+    {loginUser?.name}さん
+    {loginUser?.companyName && `：${loginUser.companyName}`}
+  </strong>
+</div>
       </PageHeader>
 
       <div className="dashboard-grid">

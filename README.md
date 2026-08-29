@@ -37,8 +37,10 @@ bms-frontend/
 ### 2. リポジトリのクローン
 
 VSコード内でターミナルを開き(control＋@)、以下を1行ずつ実行する。
+※<ユーザー名>はお使いの環境に合わせて、書き換える。
 
 **① デスクトップへ移動**
+※<ユーザー名>はお使いの環境に合わせて、書き換える。
 ```bash
 cd C:/Users/<ユーザー名>/Desktop
 ```
@@ -82,7 +84,7 @@ node -v
 
 ### 6. 依存関係のインストール
 
-このフォルダ(`package.json`がある場所)で以下を実行する。
+ターミナルで以下を実行する。
 
 ```bash
 npm install
@@ -95,7 +97,7 @@ npm install
 
 #### バックエンド
 
-control＋＠でターミナルを開き、以下を実行する。
+ターミナルで以下を実行する。
 
 ```bash
 java -jar BMS-Backend-0.0.1-SNAPSHOT.jar
@@ -132,7 +134,7 @@ npm run dev
 4. ログイン画面で「管理者ID:admin PASS:aaaまたは発注業者ID:ks_narita PASS:bbb」でログイン
 5. 各フォームを操作し実際の動きを確認する
 
-※ID及びPASSは開発環境用の初期データです。
+※ID及びPASSは開発環境用の初期データです。DBのuserテーブルから任意のものに変更できますが、PASSを変更する場合はBCryptハッシュの計算（https://toolbase.cc/crypto/bcrypt/bcrypt）で、ハッシュ化したのち、置き換えてください。
 
 
 ## ドキュメント・設計資料

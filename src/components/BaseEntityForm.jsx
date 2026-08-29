@@ -236,9 +236,8 @@ export default function BaseEntityForm({
                 name={postalField}
                 value={postalCode}
                 onChange={handlePostalChange}
-                onCompositionEnd={formatAndFetchPostalCode} // ★追加：変換確定のエンターで1発成型＆API取得
+                onCompositionEnd={formatAndFetchPostalCode} // 変換確定のエンターで1発成型＆API取得
                 onBlur={formatAndFetchPostalCode} // フォーカスアウト時
-                // maxLength="7" ← ここを削除する！ (usePostalCode側でsliceするため、ハイフン込みでも後ろが消えません)
                 className={errors[postalField] ? "field-error" : ""}
                 placeholder="郵便番号を入力(ハイフンなし)"
                 autoComplete="off"
@@ -268,7 +267,6 @@ export default function BaseEntityForm({
                 onChange={handlePhoneChange}
                 onCompositionEnd={formatPhoneOnBlur}
                 onBlur={formatPhoneOnBlur}
-                // maxLength="11" ← ここを削除する！ (usePhone側でsliceするため)
                 placeholder="電話番号を入力(ハイフンなし)"
                 className={errors[phoneField] ? "field-error" : ""}
               />

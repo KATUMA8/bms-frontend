@@ -7,7 +7,7 @@ import { normalizeKana } from "../utils/formatUtils";
  */
 export function useKanaNormalization(setFormData, fieldName) {
   const handleKanaBlurOrComposition = (e) => {
-    // fieldNameが指定されていない場合のガード（開発時のミスに気づきやすくする）
+
     if (!fieldName) {
       console.warn("useKanaNormalization: fieldName が指定されていません。");
     }

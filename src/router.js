@@ -20,7 +20,7 @@ import User from "./pages/User";
 const router = createBrowserRouter([
   // --- ログイン ---
   {
-    path: "/login", // または /user など好みのパス
+    path: "/login",
     Component: User,
   },
   {
@@ -59,7 +59,7 @@ const router = createBrowserRouter([
         Component: ProjectList,
       },
       {
-        path: "projects/add", // ★ :id よりも上に配置する
+        path: "projects/add", //
         Component: ProjectRegister,
       },
       {

@@ -15,7 +15,7 @@ export const useAdminGuard = (redirectPath = "/") => {
 
   useEffect(() => {
     // ユーザー情報がロードされた後（必要に応じて）、管理者でなければリダイレクト
-    // ※loginUserがnullの間の考慮が必要な場合は適宜調整してください
+    // ※loginUserがnullの間の考慮が必要な場合は適宜調整が必要
     if (loginUser !== null && !isAdmin) {
       navigate(redirectPath, { replace: true });
     }

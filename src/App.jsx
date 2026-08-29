@@ -1,16 +1,16 @@
 import { Outlet, useNavigate } from "react-router";
 import { useEffect } from "react";
 import Sidebar from "./components/Sidebar";
-import { useAtomValue, useSetAtom } from "jotai"; // ★ useSetAtom を追加
+import { useAtomValue, useSetAtom } from "jotai";
 import { loginUserAtom } from "./atoms/loginUserAtom";
 import { axiosInstance } from "./api/axiosInstance";
 
 function App() {
   const loginUser = useAtomValue(loginUserAtom);
-  const setLoginUser = useSetAtom(loginUserAtom); // ★ ステートを更新するための関数を追加
+  const setLoginUser = useSetAtom(loginUserAtom);
   const navigate = useNavigate();
 
-  // ★ 追加：ページがリロードされた時（マウント時）にセッションからログイン情報を復元する
+  // ページがリロードされた時（マウント時）にセッションからログイン情報を復元する
   useEffect(() => {
     // まだ loginUser がない場合のみサーバーに問い合わせる
     if (!loginUser) {
